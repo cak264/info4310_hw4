@@ -1,0 +1,117 @@
+<html>
+    <head>
+        <h3>Cameron Kull, cak264 & Marie Williams, mcw242</h3>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+
+        <style>
+            .gridlines line {
+              stroke: #bbb;
+            }
+
+            .gridlines .domain {
+              stroke: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="day_of_week_container">
+            <svg id="day_of_week_svg" height="600" width="600"></svg>
+        </div>
+
+        <script>
+
+            // Day of week histogram
+            const histogram = d3.select("#day_of_week_svg");
+            const width=histogram.attr("width");
+            const height=histogram.attr("height");
+            const margins={top: 10, right: 10, bottom: 50, left: 50};
+            const chartWidth = width - margins.left - margins.right;
+            const chartHeight = height - margins.top - margins.bottom;
+
+
+            // Data
+            let requestData = async function(){
+                let births = await d3.csv("US_births_1994-2014.csv", d3.autoType);
+                console.log(births);
+
+                let histArea=histogram.append("g")
+                                .attr("class", "histArea")
+                                .attr('transform', `translate(${margins.left},${margins.top})`);
+
+                // selecting just the 13ths
+                let thirteenths = births.filter(b=> b.date_of_month==13);
+                console.log(thirteenths);
+
+                // dictionary of avgs per day of week
+                let bin = d3.bin().value(d=> d.day_of_week)
+                                  .thresholds([1,2,3,4,5,6,7]);
+                let dowBins = bin(thirteenths);
+                console.log(dowBins);
+                let dowConverter = d3.scaleOrdinal().domain([1,2,3,4,5,6,7]).range(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+                
+                let dowDict = {};
+                let sum = 0;
+                dowBins.forEach(bin =>{
+                    
+                    bin.forEach(value =>{
+                        sum+=value.births;
+                    })
+                    dowDict[dowConverter(bin.x0)]=Math.floor(sum/bin.length);
+                    sum=0;
+                })
+                console.log(dowDict);
+
+                let histXScale = d3.scaleBand().domain(Object.keys(dowDict)).range([0,chartWidth]);
+                let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(dowDict))-1000, Math.max(...Object.values(dowDict))+1000]).range([chartHeight, 0]);
+
+                let leftAxis = d3.axisLeft(histYScale);
+                histogram.append('g')
+                    .attr('transform',`translate(${margins.left-10},${margins.top})`)
+                    .call(leftAxis);
+
+                let leftGridlines = d3.axisLeft(histYScale)
+                                    .tickSize(-chartWidth-10)
+                                    .tickFormat('');
+                histogram.append('g')
+                    .attr('class', 'gridlines')
+                    .attr('transform',`translate(${margins.left-10},${margins.top})`)
+                    .call(leftGridlines);
+
+                let bottomAxis = d3.axisBottom(histXScale);
+                histogram.append('g')
+                    .attr('transform',`translate(${margins.left},${chartHeight+margins.top+10})`)
+                    .call(bottomAxis);
+
+                // axis labels and titles
+                histogram.append('text')
+                    .text("Average Births on the 13th, 1994-2014")
+                    .attr("class", "title")
+                    .attr('x', 320)
+                    .attr('y', 10)
+                    .style('font-size', 20)
+                    .style('font-weight', 'bold')
+                    .style("text-anchor", "middle")
+                    .style("alignment-baseline", "central");
+
+                // add bars
+                histArea.selectAll("rect").data(Object.entries(dowDict))
+                        .join("rect")
+                        .attr("x", d=> histXScale(d[0]))
+                        .attr("y", d=> histYScale(d[1]))
+                        .attr("width", histXScale.bandwidth())
+                        .attr("height", d=> chartHeight - histYScale(d[1]))
+                        .attr("fill", "steelblue");
+                histArea.raise();
+                    console.log(chartWidth/7)
+
+
+            }
+
+            requestData();
+
+
+
+           
+        </script>
+    </body>
+</html>
