@@ -45,24 +45,32 @@
                 // dictionary of avgs per day of week
                 let bin = d3.bin().value(d=> d.day_of_week)
                                   .thresholds([1,2,3,4,5,6,7]);
-                let dowBins = bin(thirteenths);
-                console.log(dowBins);
+                //let dowBins = bin(thirteenths);
+                //console.log(dowBins);
                 let dowConverter = d3.scaleOrdinal().domain([1,2,3,4,5,6,7]).range(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
                 
-                let dowDict = {};
-                let sum = 0;
-                dowBins.forEach(bin =>{
-                    
-                    bin.forEach(value =>{
-                        sum+=value.births;
+                function dowDict(data){
+                    // break the data down into bins, separating day of week
+                    let dowBins = bin(data);
+                    // create a dictionary holding the average births for each day of the week
+                    let dowDict = {};
+                    let sum = 0;
+                    dowBins.forEach(bin =>{
+                        
+                        bin.forEach(value =>{
+                            sum+=value.births;
+                        })
+                        dowDict[dowConverter(bin.x0)]=Math.floor(sum/bin.length);
+                        sum=0;
                     })
-                    dowDict[dowConverter(bin.x0)]=Math.floor(sum/bin.length);
-                    sum=0;
-                })
-                console.log(dowDict);
+                    return dowDict;
+                };
+                
+                let thirteenthsDict = dowDict(thirteenths);
+                console.log(thirteenthsDict);
 
-                let histXScale = d3.scaleBand().domain(Object.keys(dowDict)).range([0,chartWidth]);
-                let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(dowDict))-1000, Math.max(...Object.values(dowDict))+1000]).range([chartHeight, 0]);
+                let histXScale = d3.scaleBand().domain(Object.keys(thirteenthsDict)).range([0,chartWidth]);
+                let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(thirteenthsDict))-1000, Math.max(...Object.values(thirteenthsDict))+1000]).range([chartHeight, 0]);
 
                 let leftAxis = d3.axisLeft(histYScale);
                 histogram.append('g')
@@ -94,7 +102,7 @@
                     .style("alignment-baseline", "central");
 
                 // add bars
-                histArea.selectAll("rect").data(Object.entries(dowDict))
+                histArea.selectAll("rect").data(Object.entries(thirteenthsDict))
                         .join("rect")
                         .attr("x", d=> histXScale(d[0]))
                         .attr("y", d=> histYScale(d[1]))
