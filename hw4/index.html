@@ -11,16 +11,18 @@
             .gridlines .domain {
               stroke: none;
             }
+
         </style>
     </head>
     <body>
         <div id="day_of_week_container">
             <svg id="day_of_week_svg" height="600" width="600"></svg>
+            <svg id="day_of_week_svg2" height="600" width="600"></svg>
         </div>
 
         <script>
 
-            // Day of week histogram
+            // Day of week counts histogram
             const histogram = d3.select("#day_of_week_svg");
             const width=histogram.attr("width");
             const height=histogram.attr("height");
@@ -28,6 +30,8 @@
             const chartWidth = width - margins.left - margins.right;
             const chartHeight = height - margins.top - margins.bottom;
 
+            // Day of week proportion histogram
+            const propHistogram = d3.select("#day_of_week_svg2");
 
             // Data
             let requestData = async function(){
@@ -38,9 +42,15 @@
                                 .attr("class", "histArea")
                                 .attr('transform', `translate(${margins.left},${margins.top})`);
 
+                let propHistArea=propHistogram.append("g")
+                                .attr("class", "propHistArea")
+                                .attr('transform', `translate(${margins.left},${margins.top})`);
+
                 // selecting just the 13ths
                 let thirteenths = births.filter(b=> b.date_of_month==13);
                 console.log(thirteenths);
+                let nonThirteenths = births.filter(b=> b.date_of_month!=13);
+                console.log(nonThirteenths);
 
                 // dictionary of avgs per day of week
                 let bin = d3.bin().value(d=> d.day_of_week)
@@ -68,50 +78,87 @@
                 
                 let thirteenthsDict = dowDict(thirteenths);
                 console.log(thirteenthsDict);
+                let nonThirteenthsDict = dowDict(nonThirteenths);
+                console.log(nonThirteenthsDict);
+
+                let propDict = {}; 
+                for (let key in thirteenthsDict){
+                    propDict[key] = thirteenthsDict[key]/nonThirteenthsDict[key];
+                }
+                console.log(propDict);
 
                 let histXScale = d3.scaleBand().domain(Object.keys(thirteenthsDict)).range([0,chartWidth]);
                 let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(thirteenthsDict))-1000, Math.max(...Object.values(thirteenthsDict))+1000]).range([chartHeight, 0]);
+                let propHistYScale = d3.scaleLinear().domain([0.936, 1.006]).range([chartHeight, 0]);
 
-                let leftAxis = d3.axisLeft(histYScale);
-                histogram.append('g')
-                    .attr('transform',`translate(${margins.left-10},${margins.top})`)
-                    .call(leftAxis);
+                function createAxes(yScale, graph, title){
+                    let leftAxis = d3.axisLeft(yScale)
+                                     .ticks(7);
+                    graph.append('g')
+                        .attr('transform',`translate(${margins.left-10},${margins.top})`)
+                        .call(leftAxis);
 
-                let leftGridlines = d3.axisLeft(histYScale)
-                                    .tickSize(-chartWidth-10)
-                                    .tickFormat('');
-                histogram.append('g')
-                    .attr('class', 'gridlines')
-                    .attr('transform',`translate(${margins.left-10},${margins.top})`)
-                    .call(leftGridlines);
+                    let leftGridlines = d3.axisLeft(yScale)
+                                        .tickSize(-chartWidth-10)
+                                        .ticks(7)
+                                        .tickFormat('');
+                    graph.append('g')
+                        .attr('class', 'gridlines')
+                        .attr('transform',`translate(${margins.left-10},${margins.top})`)
+                        .call(leftGridlines);
 
-                let bottomAxis = d3.axisBottom(histXScale);
-                histogram.append('g')
-                    .attr('transform',`translate(${margins.left},${chartHeight+margins.top+10})`)
-                    .call(bottomAxis);
+                    let bottomAxis = d3.axisBottom(histXScale);
+                    graph.append('g')
+                        .attr('transform',`translate(${margins.left},${chartHeight+margins.top+10})`)
+                        .call(bottomAxis);
 
-                // axis labels and titles
-                histogram.append('text')
-                    .text("Average Births on the 13th, 1994-2014")
-                    .attr("class", "title")
-                    .attr('x', 320)
-                    .attr('y', 10)
-                    .style('font-size', 20)
-                    .style('font-weight', 'bold')
-                    .style("text-anchor", "middle")
-                    .style("alignment-baseline", "central");
+                    // axis labels and titles
+                    graph.append('text')
+                        .text(title)
+                        .attr("class", "title")
+                        .attr('x', 320)
+                        .attr('y', 10)
+                        .style('font-size', 20)
+                        .style('font-weight', 'bold')
+                        .style("text-anchor", "middle")
+                        .style("alignment-baseline", "central");
+                };
+
+                createAxes(histYScale, histogram, "Average Birth Counts on the 13th, 1994-2014");
+                createAxes(propHistYScale, propHistogram, "Proportion of Births on the 13th to Births on All Other Dates");
+                
+
+
 
                 // add bars
-                histArea.selectAll("rect").data(Object.entries(thirteenthsDict))
+
+                histArea.selectAll("rect.thirteen").data(Object.entries(thirteenthsDict))
                         .join("rect")
+                        .attr("class", 'thirteen')
                         .attr("x", d=> histXScale(d[0]))
                         .attr("y", d=> histYScale(d[1]))
                         .attr("width", histXScale.bandwidth())
                         .attr("height", d=> chartHeight - histYScale(d[1]))
-                        .attr("fill", "steelblue");
-                histArea.raise();
-                    console.log(chartWidth/7)
+                        .attr("fill", function(d){
+                            if (d[0] == "Friday"){return "#d62f2f"}
+                            else{return "#4a4444"}
+                        });
 
+                histArea.raise();
+
+                propHistArea.selectAll("rect.proportion").data(Object.entries(propDict))
+                        .join("rect")
+                        .attr("class", 'proportion')
+                        .attr("x", d=> histXScale(d[0]))
+                        .attr("y", d=> propHistYScale(d[1]))
+                        .attr("width", histXScale.bandwidth())
+                        .attr("height", d=> chartHeight - propHistYScale(d[1]))
+                        .attr("fill", function(d){
+                            if (d[0] == "Friday"){return "#d62f2f"}
+                            else{return "#4a4444"}
+                        });
+
+                propHistArea.raise();
 
             }
 
