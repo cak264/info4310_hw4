@@ -12,10 +12,32 @@
               stroke: none;
             }
 
+            .count-panel {
+                position: absolute;
+                top: 100px;
+                left: 650px;
+                width: 400px;
+                height: 500px;
+            }
+
+            #countsButton {
+                position: absolute;
+                top: 50px;
+                left: 50px;
+            }
+
+            #propButton {
+                position: absolute;
+                top: 50px;
+                left: 160px;
+            }
+
         </style>
     </head>
     <body>
         <div id="day_of_week_container">
+            <button id="countsButton">Counts View</button>
+            <button id="propButton">Proportions View</button>
             <svg id="day_of_week_svg" height="600" width="600"></svg>
             <svg id="day_of_week_svg2" height="600" width="600"></svg>
         </div>
@@ -169,6 +191,7 @@
                         });
 
                 propHistArea.raise();
+                propHistogram.attr("visibility", "hidden");
 
                 // add bar interaction
 
@@ -211,6 +234,37 @@
                             .text("");
                     
                 })
+
+                // panel
+
+
+                let countPanel = d3.select("#day_of_week_container").append("g");
+                console.log(countPanel);
+                countPanel.style("border", "1px solid black")
+                          .attr("class", "count-panel")
+                          .attr("visibility", "hidden");
+
+                countPanel.append("text")
+                          .attr("x", 20)
+                          .attr("y", 80)
+                          .text("Friday the 13th Births by Count")
+                          .style("font-size", 25)
+                          .style("font-weight", "bold");
+
+
+                d3.select("#countsButton").on("click", function(){
+                    histogram.attr("visibility", "visible");
+                    propHistogram.attr("visibility", "hidden");
+                    countPanel.attr("visibility", "visible");
+
+                });
+
+                d3.select("#propButton").on("click", function(){
+                    histogram.attr("visibility", "hidden");
+                    propHistogram.attr("visibility", "visible");
+                    countPanel.attr("visibility", "hidden");
+                    
+                });
 
 
                 // line chart
