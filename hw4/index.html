@@ -170,6 +170,48 @@
 
                 propHistArea.raise();
 
+                // add bar interaction
+
+                histArea.selectAll("rect.thirteen").on("mouseover", function(event, d){
+                    d3.select(this)
+                      .attr("stroke", "#c4c2c2")
+                      .attr("stroke-width", 3);
+                    histArea.append("text")
+                        .attr("x", histXScale(d[0])+1)
+                        .attr("y", histYScale(d[1])-10)
+                        .text(d[1].toString()+" Births")
+                        .style("font-size", 14)
+                        .style("font-weight", "bold");
+                })
+
+                histArea.selectAll("rect.thirteen").on("mouseout", function(event, d){
+                    d3.select(this)
+                      .attr("stroke", "none");
+                    histArea.selectAll("text")
+                            .text("");
+                    
+                })
+
+                propHistArea.selectAll("rect.proportion").on("mouseover", function(event, d){
+                    d3.select(this)
+                      .attr("stroke", "#c4c2c2")
+                      .attr("stroke-width", 3);
+                    propHistArea.append("text")
+                        .attr("x", 20)
+                        .attr("y", 80)
+                        .text(thirteenthsDict[d[0]].toString()+" Births : "+nonThirteenthsDict[d[0]].toString()+" Births")
+                        .style("font-size", 16)
+                        .style("font-weight", "bold");
+                })
+
+                propHistArea.selectAll("rect.proportion").on("mouseout", function(event, d){
+                    d3.select(this)
+                      .attr("stroke", "none");
+                    propHistArea.selectAll("text")
+                            .text("");
+                    
+                })
+
 
                 // line chart
                 let lChartArea = linechart.append("g")
