@@ -20,6 +20,8 @@
             <svg id="day_of_week_svg2" height="600" width="600"></svg>
         </div>
 
+        <svg id="linechart" height="600" width="800"></svg>
+
         <script>
 
             // Day of week counts histogram
@@ -32,6 +34,14 @@
 
             // Day of week proportion histogram
             const propHistogram = d3.select("#day_of_week_svg2");
+
+            // Line chart
+            const linechart = d3.select("#linechart");
+            const svg_width = linechart.attr("width");
+            const svg_height= linechart.attr("height");
+            const lc_margins={top: 10, right: 10, bottom: 50, left: 50};
+            const lchartWidth = svg_width - lc_margins.left - lc_margins.right;
+            const lchartHeight = svg_height - lc_margins.top - lc_margins.bottom;
 
             // Data
             let requestData = async function(){
@@ -58,7 +68,7 @@
                 //let dowBins = bin(thirteenths);
                 //console.log(dowBins);
                 let dowConverter = d3.scaleOrdinal().domain([1,2,3,4,5,6,7]).range(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
-                
+
                 function dowDict(data){
                     // break the data down into bins, separating day of week
                     let dowBins = bin(data);
@@ -66,7 +76,7 @@
                     let dowDict = {};
                     let sum = 0;
                     dowBins.forEach(bin =>{
-                        
+
                         bin.forEach(value =>{
                             sum+=value.births;
                         })
@@ -75,13 +85,13 @@
                     })
                     return dowDict;
                 };
-                
+
                 let thirteenthsDict = dowDict(thirteenths);
                 console.log(thirteenthsDict);
                 let nonThirteenthsDict = dowDict(nonThirteenths);
                 console.log(nonThirteenthsDict);
 
-                let propDict = {}; 
+                let propDict = {};
                 for (let key in thirteenthsDict){
                     propDict[key] = thirteenthsDict[key]/nonThirteenthsDict[key];
                 }
@@ -126,7 +136,7 @@
 
                 createAxes(histYScale, histogram, "Average Birth Counts on the 13th, 1994-2014");
                 createAxes(propHistYScale, propHistogram, "Proportion of Births on the 13th to Births on All Other Dates");
-                
+
 
 
 
@@ -160,13 +170,113 @@
 
                 propHistArea.raise();
 
+
+                // line chart
+                let lChartArea = linechart.append("g")
+                                // .attr("class", "linecArea")
+                                .attr('transform', `translate(${lc_margins.left},${lc_margins.top})`);
+
+                function drawLineChart(year){
+                    const dataYear = births.filter(d => d.year === year);
+
+                    dataYear.forEach(d => {
+                        d.date = new Date(d.year, d.month-1, d.date_of_month);
+                    });
+
+                    const averageBirths = d3.mean(dataYear, d => d.births);
+
+                    const lcxScale = d3.scaleTime().domain(d3.extent(dataYear, d => d.date)).range([0, lchartWidth]);
+                    const lcyScale = d3.scaleLinear().domain([d3.min(dataYear, d => d.births) - averageBirths, d3.max(dataYear, d => d.births) - averageBirths]).range([lchartHeight, 0]);
+
+
+                    const line = d3.line()
+                        .x(d => lcxScale(d.date))
+                        .y(d => lcyScale(d.births - averageBirths));
+
+                    const lcxAxis = d3.axisBottom(lcxScale)
+                        .tickFormat(d3.timeFormat("%b"));
+                    linechart.append('g')
+                        .attr('transform', `translate(${lc_margins.left},${lchartHeight + lc_margins.top+20})`)
+                        .call(lcxAxis);
+
+                    const lcyAxis = d3.axisLeft(lcyScale)
+                        .tickFormat(function(d) {
+                            if (d === 0) {
+                                return 'Avg';
+                            } else if (d>0) {
+                                return '+' + d;
+                            } else {
+                                return d;
+                            }
+                        });
+                    linechart.append('g')
+                        .attr('transform', `translate(${lc_margins.left-10},${lc_margins.top})`)
+                        .call(lcyAxis);
+
+                    let lcleftGridlines = d3.axisLeft(lcyScale)
+                                        .tickSize(-lchartWidth-10)
+                                        .tickFormat('');
+                    lChartArea.append('g')
+                        .attr('class', 'gridlines')
+                        .attr('transform',`translate(${lc_margins.left-60}, 0)`)
+                        .call(lcleftGridlines);
+
+                    lChartArea.append("line")
+                        .attr("class", "average-line")
+                        .attr("x1", lc_margins.left-60) //-60
+                        .attr("y1", lcyScale(0) + lc_margins.top-10)
+                        .attr("x2", lc_margins.left + lchartWidth)
+                        .attr("y2", lcyScale(0) + lc_margins.top-10)
+                        .style("stroke", "#d62f2f")
+                        .style("stroke-width", 2);
+
+
+                    lChartArea.append("path")
+                        .datum(dataYear)
+                        .attr("class", "line-chart")
+                        .attr("fill", "none")
+                        .attr("stroke", "#4a4444")
+                        .attr("stroke-width", 1.5)
+                        .attr("d", line);
+
+                    // hovering
+                    let circles = lChartArea.selectAll("circle").data(dataYear)
+                        .join("circle")
+                        .attr("class", "point")
+                        .attr("cx", d => lcxScale(d.date))
+                        .attr("cy", d => lcyScale(d.births)+800)
+                        .attr("r", 5)
+                        .style("fill", "black")
+                        .style("opacity", 0);
+
+                    circles.on("mouseover", function(event, d) {
+                        d3.select(this)
+                            .style("opacity", 1);
+                        lChartArea.append("text")
+                            .attr("id", "tooltip")
+                            .attr("x", 100)
+                            .attr("y", 20)
+                            .attr("text-anchor", "middle")
+                            .text(`${d.date.toDateString()}, Births: ${d.births}`);
+                    });
+
+                    circles.on("mouseout", function(event, d) {
+                        d3.select(this).style("opacity", 0);
+                        d3.select("#tooltip").remove();
+                    });
+
+
+                };
+
+                drawLineChart(2001);
+
             }
 
             requestData();
 
 
 
-           
+
         </script>
     </body>
 </html>
