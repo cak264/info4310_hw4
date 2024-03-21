@@ -65,6 +65,11 @@
                 left: 275px;
             }
 
+            p {
+                padding: 10px;
+                margin: 5px;
+            }
+
         </style>
     </head>
     <body>
@@ -76,9 +81,9 @@
                 <button id="propButton">Proportions View</button>
                 <svg id="day_of_week_svg2" height="600" width="600"></svg>
                 <svg id="day_of_week_svg" height="600" width="600"></svg>
-                <text id="select-a-date">Select a Date (1 - 31)</text>
-                <input type="text" id="date-input" minlength="1" maxlength="2" size="4" placeholder="13"></input>
-                <button id="submit">Submit</button>
+                <text id="select-a-date">Enter a Date (1 - 31)</text>
+                <input type="text" id="date-input" minlength="1" maxlength="2" size="4"></input>
+                <button id="submit">Update</button>
             </div>
 
             <svg id="linechart" height="600" width="800"></svg>
@@ -93,6 +98,8 @@
             const margins={top: 10, right: 10, bottom: 50, left: 50};
             const chartWidth = width - margins.left - margins.right;
             const chartHeight = height - margins.top - margins.bottom;
+
+            histogram.attr("transform", `translate(${-600})`);
 
             // Day of week proportion histogram
             const propHistogram = d3.select("#day_of_week_svg2");
@@ -161,7 +168,7 @@
 
                 let histXScale = d3.scaleBand().domain(Object.keys(thirteenthsDict)).range([0,chartWidth]);
                 let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(thirteenthsDict))-1000, Math.max(...Object.values(thirteenthsDict))+1000]).range([chartHeight, 0]);
-                let propHistYScale = d3.scaleLinear().domain([0.936, 1.04]).range([chartHeight, 0]);
+                let propHistYScale = d3.scaleLinear().domain([0.92, 1.045]).range([chartHeight, 0]);
 
                 function createAxes(yScale, graph, title){
                     let leftAxis = d3.axisLeft(yScale)
@@ -185,19 +192,19 @@
                         .call(bottomAxis);
 
                     // axis labels and titles
-                    graph.append('text')
-                        .text(title)
-                        .attr("class", "title")
-                        .attr('x', 320)
-                        .attr('y', 10)
-                        .style('font-size', 20)
-                        .style('font-weight', 'bold')
-                        .style("text-anchor", "middle")
-                        .style("alignment-baseline", "central");
+                    // graph.append('text')
+                    //     .text(title)
+                    //     .attr("class", "title")
+                    //     .attr('x', 320)
+                    //     .attr('y', 10)
+                    //     .style('font-size', 20)
+                    //     .style('font-weight', 'bold')
+                    //     .style("text-anchor", "middle")
+                    //     .style("alignment-baseline", "central");
                 };
 
                 createAxes(histYScale, histogram, "Average Birth Counts on the 13th, 1994-2014");
-                createAxes(propHistYScale, propHistogram, "Proportion of Births on the 13th to Births on All Other Dates");
+                createAxes(propHistYScale, propHistogram, "Ratio of Births on the 13th to Births on All Other Dates");
 
                 // add bars
 
@@ -208,10 +215,7 @@
                         .attr("y", d=> histYScale(d[1]))
                         .attr("width", histXScale.bandwidth())
                         .attr("height", d=> chartHeight - histYScale(d[1]))
-                        .attr("fill", function(d){
-                            if (d[0] == "Friday"){return "#d62f2f"}
-                            else{return "#4a4444"}
-                        });
+                        .attr("fill", "#4a4444");
 
                 histArea.raise();
 
@@ -283,19 +287,20 @@
                           .attr("class", "count-panel")
                           .style("position", "absolute")
                           .style("bottom", "65px")
-                          .style("left", "140px")
+                          .style("left", "650px")
                           .style("width", "400px")
                           .style("height", "500px")
                           .style("visibility", "hidden");
 
                 countPanel.append("text")
+                          .attr("id", "count-title")
                           .attr("x", 20)
                           .attr("y", 80)
-                          .text("Friday the 13th Births by Count")
+                          .text("Births by Count on the 13th of each month")
                           .style("font-size", 25)
                           .style("font-weight", "bold");
                 countPanel.append("p")
-                          .text("When comparing the average count of births on the 13th of any month of the span of 1994 - 2014, we can see that there are not the fewest number of births on Friday the 13th. In fact, this histogram appears to unveil a pattern of greater numbers of births on weekdays versus weekends.");
+                          .text("When comparing the average count of births on the 13th of any month of the span of 1994 - 2014, we can see that there are not the fewest number of births on Friday the 13th. In fact, this histogram appears to unveil a pattern of greater numbers of births on weekdays versus weekends. For almost every date, Tuesdays appear to be the most popular day to give birth, and Sundays are the least popular. ");
 
 
                 let propPanel = d3.select("#day_of_week_container").append("g");
@@ -309,6 +314,7 @@
                           .style("visibility", "visible");
 
                 propPanel.append("text")
+                          .attr("id", "prop-title")
                           .attr("x", 20)
                           .attr("y", 80)
                           .text("Ratio of Average Births on the 13th to Births on All Other Dates")
@@ -316,7 +322,7 @@
                           .style("font-weight", "bold");
 
                 propPanel.append("p")
-                          .text("This graphs compares the average number of births on the 13th of each month to the average number of births on any other date for each month over the span of 1994 - 2014. As we can see, the ratio of births on the 13th to births not on the 13th for Friday is much lower than the other days of the week. This unveils that if a baby is born on a Friday, the parents prefer the date of that Friday to not be the 13th, showing that people are supersticious about Friday the 13th.")
+                          .text("This graphs compares the average number of births on the any given date of each month to the average number of births on all other dates for each month over the span of 1994 - 2014. When looking at the 13th, we can see the ratio of births on the 13th to births not on the 13th for Friday is much lower than the other days of the week. This unveils that if a baby is born on a Friday, the parents prefer the date of that Friday to not be the 13th, showing that people are supersticious about Friday the 13th. Other dates that seem to potentially be supersticiously impacted are FILL THE REST IN... ")
 
 
                 d3.select("#countsButton").on("click", function(){
@@ -348,20 +354,17 @@
                 })
 
                 function updateDate(date){
-                    console.log(date);
+
                     let includingDate = births.filter(b=> b.date_of_month == date);
                     let notIncludingDate = births.filter(b=> b.date_of_month != date);
 
                     let dateDict = dowDict(includingDate);
-                    console.log(dateDict);
                     let nonDateDict = dowDict(notIncludingDate);
-                    console.log(nonDateDict);
 
                     let propDict = {};
                     for (let key in dateDict){
                         propDict[key] = dateDict[key]/nonDateDict[key];
                     }
-                    console.log(propDict);
 
                     histArea.selectAll("rect.selectedDate").data(Object.entries(dateDict))
                         .join("rect")
@@ -371,10 +374,7 @@
                         .attr("y", d=> histYScale(d[1]))
                         .attr("width", histXScale.bandwidth())
                         .attr("height", d=> chartHeight - histYScale(d[1]))
-                        .attr("fill", function(d){
-                            if (d[0] == "Friday"){return "#d62f2f"}
-                            else{return "#4a4444"}
-                        });
+                        .attr("fill", "#4a4444");
 
                     propHistArea.selectAll("rect.proportion").data(Object.entries(propDict))
                         .join("rect")
@@ -385,9 +385,27 @@
                         .attr("width", histXScale.bandwidth())
                         .attr("height", d=> chartHeight - propHistYScale(d[1]))
                         .attr("fill", function(d){
-                            if (d[0] == "Friday"){return "#d62f2f"}
+                            if (d[1] == Math.min(...Object.values(propDict))){return "#d62f2f"}
                             else{return "#4a4444"}
                         });
+                    
+                    if ([1, 21, 31].includes(date)){
+                        d3.select("#count-title").text("Births by Count on the "+date.toString()+"st of each month")
+                        d3.select("#prop-title").text("Ratio of Average Births on the "+date.toString()+"st to Births on All Other Dates")
+                    }
+                    else if ([2, 22].includes(date)){
+                        d3.select("#count-title").text("Births by Count on the "+date.toString()+"nd of each month")
+                        d3.select("#prop-title").text("Ratio of Average Births on the "+date.toString()+"nd to Births on All Other Dates")
+                    }
+                    else if ([3, 23].includes(date)){
+                        d3.select("#count-title").text("Births by Count on the "+date.toString()+"rd of each month")
+                        d3.select("#prop-title").text("Ratio of Average Births on the "+date.toString()+"rd to Births on All Other Dates")
+                    }
+                    else {
+                        d3.select("#count-title").text("Births by Count on the "+date.toString()+"th of each month")
+                        d3.select("#prop-title").text("Ratio of Average Births on the "+date.toString()+"th to Births on All Other Dates")
+                    }
+                    
                     
                 }
 
