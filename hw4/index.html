@@ -1,9 +1,32 @@
 <html>
     <head>
+        <h1>US Births and Birth Superstitions</h1>
         <h3>Cameron Kull, cak264 & Marie Williams, mcw242</h3>
         <script src="https://d3js.org/d3.v7.min.js"></script>
 
         <style>
+            #all {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction:column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            h1, h3{
+                text-align: center;
+                position: relative;
+                top: 50px;
+            }
+
+            #day_of_week_container, #linechart{
+                position: relative;
+                display: flex;
+                top: 70px;
+                align-items: center;
+            }
+
             .gridlines line {
               stroke: #bbb;
             }
@@ -12,37 +35,54 @@
               stroke: none;
             }
 
-            .count-panel {
-                position: absolute;
-                top: 100px;
-                left: 650px;
-                width: 400px;
-                height: 500px;
-            }
-
             #countsButton {
                 position: absolute;
-                top: 50px;
-                left: 50px;
+                top: -70px;
+                left: 180px;
             }
 
             #propButton {
                 position: absolute;
-                top: 50px;
-                left: 160px;
+                top: -70px;
+                left: 50px;
+            }
+
+            input {
+                position: absolute;
+                top: -30px;
+                left: 200px;
+            }
+
+            #select-a-date {
+                position: absolute;
+                top: -30px;
+                left: 50px;
+            }
+
+            #submit {
+                position: absolute;
+                top: -30px;
+                left: 275px;
             }
 
         </style>
     </head>
     <body>
-        <div id="day_of_week_container">
-            <button id="countsButton">Counts View</button>
-            <button id="propButton">Proportions View</button>
-            <svg id="day_of_week_svg" height="600" width="600"></svg>
-            <svg id="day_of_week_svg2" height="600" width="600"></svg>
-        </div>
+        <br>
+        <br>
+        <div id="all">
+            <div id="day_of_week_container">
+                <button id="countsButton">Counts View</button>
+                <button id="propButton">Proportions View</button>
+                <svg id="day_of_week_svg2" height="600" width="600"></svg>
+                <svg id="day_of_week_svg" height="600" width="600"></svg>
+                <text id="select-a-date">Select a Date (1 - 31)</text>
+                <input type="text" id="date-input" minlength="1" maxlength="2" size="4" placeholder="13"></input>
+                <button id="submit">Submit</button>
+            </div>
 
-        <svg id="linechart" height="600" width="800"></svg>
+            <svg id="linechart" height="600" width="800"></svg>
+        </div>
 
         <script>
 
@@ -121,7 +161,7 @@
 
                 let histXScale = d3.scaleBand().domain(Object.keys(thirteenthsDict)).range([0,chartWidth]);
                 let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(thirteenthsDict))-1000, Math.max(...Object.values(thirteenthsDict))+1000]).range([chartHeight, 0]);
-                let propHistYScale = d3.scaleLinear().domain([0.936, 1.006]).range([chartHeight, 0]);
+                let propHistYScale = d3.scaleLinear().domain([0.936, 1.04]).range([chartHeight, 0]);
 
                 function createAxes(yScale, graph, title){
                     let leftAxis = d3.axisLeft(yScale)
@@ -159,14 +199,11 @@
                 createAxes(histYScale, histogram, "Average Birth Counts on the 13th, 1994-2014");
                 createAxes(propHistYScale, propHistogram, "Proportion of Births on the 13th to Births on All Other Dates");
 
-
-
-
                 // add bars
 
-                histArea.selectAll("rect.thirteen").data(Object.entries(thirteenthsDict))
+                histArea.selectAll("rect.selectedDate").data(Object.entries(thirteenthsDict))
                         .join("rect")
-                        .attr("class", 'thirteen')
+                        .attr("class", 'selectedDate')
                         .attr("x", d=> histXScale(d[0]))
                         .attr("y", d=> histYScale(d[1]))
                         .attr("width", histXScale.bandwidth())
@@ -191,26 +228,27 @@
                         });
 
                 propHistArea.raise();
-                propHistogram.attr("visibility", "hidden");
+                histogram.attr("visibility", "hidden");
 
                 // add bar interaction
 
-                histArea.selectAll("rect.thirteen").on("mouseover", function(event, d){
+                histArea.selectAll("rect.selectedDate").on("mouseover", function(event, d){
                     d3.select(this)
                       .attr("stroke", "#c4c2c2")
                       .attr("stroke-width", 3);
-                    histArea.append("text")
-                        .attr("x", histXScale(d[0])+1)
-                        .attr("y", histYScale(d[1])-10)
+                    countPanel.append("text")
+                        .attr("x", 10)
+                        .attr("y", 400)
                         .text(d[1].toString()+" Births")
-                        .style("font-size", 14)
-                        .style("font-weight", "bold");
+                        .style("font-size", 17)
+                        .style("font-weight", "bold")
+                        .attr("class", "count-label");
                 })
 
-                histArea.selectAll("rect.thirteen").on("mouseout", function(event, d){
+                histArea.selectAll("rect.selectedDate").on("mouseout", function(event, d){
                     d3.select(this)
                       .attr("stroke", "none");
-                    histArea.selectAll("text")
+                    countPanel.selectAll("text.count-label")
                             .text("");
                     
                 })
@@ -219,18 +257,19 @@
                     d3.select(this)
                       .attr("stroke", "#c4c2c2")
                       .attr("stroke-width", 3);
-                    propHistArea.append("text")
-                        .attr("x", 20)
-                        .attr("y", 80)
+                    propPanel.append("text")
+                        .attr("x", 0)
+                        .attr("y", 0)
                         .text(thirteenthsDict[d[0]].toString()+" Births : "+nonThirteenthsDict[d[0]].toString()+" Births")
                         .style("font-size", 16)
-                        .style("font-weight", "bold");
+                        .style("font-weight", "bold")
+                        .attr("class", "prop-label");
                 })
 
                 propHistArea.selectAll("rect.proportion").on("mouseout", function(event, d){
                     d3.select(this)
                       .attr("stroke", "none");
-                    propHistArea.selectAll("text")
+                    propPanel.selectAll("text.prop-label")
                             .text("");
                     
                 })
@@ -242,7 +281,12 @@
                 console.log(countPanel);
                 countPanel.style("border", "1px solid black")
                           .attr("class", "count-panel")
-                          .attr("visibility", "hidden");
+                          .style("position", "absolute")
+                          .style("bottom", "65px")
+                          .style("left", "140px")
+                          .style("width", "400px")
+                          .style("height", "500px")
+                          .style("visibility", "hidden");
 
                 countPanel.append("text")
                           .attr("x", 20)
@@ -250,21 +294,102 @@
                           .text("Friday the 13th Births by Count")
                           .style("font-size", 25)
                           .style("font-weight", "bold");
+                countPanel.append("p")
+                          .text("When comparing the average count of births on the 13th of any month of the span of 1994 - 2014, we can see that there are not the fewest number of births on Friday the 13th. In fact, this histogram appears to unveil a pattern of greater numbers of births on weekdays versus weekends.");
+
+
+                let propPanel = d3.select("#day_of_week_container").append("g");
+                propPanel.style("border", "1px solid black")
+                          .attr("class", "count-panel")
+                          .style("position", "absolute")
+                          .style("bottom", "65px")
+                          .style("left", "650px")
+                          .style("width", "400px")
+                          .style("height", "500px")
+                          .style("visibility", "visible");
+
+                propPanel.append("text")
+                          .attr("x", 20)
+                          .attr("y", 80)
+                          .text("Ratio of Average Births on the 13th to Births on All Other Dates")
+                          .style("font-size", 25)
+                          .style("font-weight", "bold");
+
+                propPanel.append("p")
+                          .text("This graphs compares the average number of births on the 13th of each month to the average number of births on any other date for each month over the span of 1994 - 2014. As we can see, the ratio of births on the 13th to births not on the 13th for Friday is much lower than the other days of the week. This unveils that if a baby is born on a Friday, the parents prefer the date of that Friday to not be the 13th, showing that people are supersticious about Friday the 13th.")
 
 
                 d3.select("#countsButton").on("click", function(){
                     histogram.attr("visibility", "visible");
                     propHistogram.attr("visibility", "hidden");
-                    countPanel.attr("visibility", "visible");
+                    countPanel.style("visibility", "visible");
+                    propPanel.style("visibility", "hidden");
 
                 });
 
                 d3.select("#propButton").on("click", function(){
                     histogram.attr("visibility", "hidden");
                     propHistogram.attr("visibility", "visible");
-                    countPanel.attr("visibility", "hidden");
+                    countPanel.style("visibility", "hidden");
+                    propPanel.style("visibility", "visible");
                     
                 });
+
+                // date input
+
+                let submit = d3.select("#submit");
+                
+                submit.on("click", function(){
+                    let date = parseInt(document.getElementById("date-input").value);
+                    if (date>0 & date<32){
+                        updateDate(date);
+                    }
+                        
+                })
+
+                function updateDate(date){
+                    console.log(date);
+                    let includingDate = births.filter(b=> b.date_of_month == date);
+                    let notIncludingDate = births.filter(b=> b.date_of_month != date);
+
+                    let dateDict = dowDict(includingDate);
+                    console.log(dateDict);
+                    let nonDateDict = dowDict(notIncludingDate);
+                    console.log(nonDateDict);
+
+                    let propDict = {};
+                    for (let key in dateDict){
+                        propDict[key] = dateDict[key]/nonDateDict[key];
+                    }
+                    console.log(propDict);
+
+                    histArea.selectAll("rect.selectedDate").data(Object.entries(dateDict))
+                        .join("rect")
+                        .attr("class", "selectedDate")
+                        .transition().duration(200)
+                        .attr("x", d=> histXScale(d[0]))
+                        .attr("y", d=> histYScale(d[1]))
+                        .attr("width", histXScale.bandwidth())
+                        .attr("height", d=> chartHeight - histYScale(d[1]))
+                        .attr("fill", function(d){
+                            if (d[0] == "Friday"){return "#d62f2f"}
+                            else{return "#4a4444"}
+                        });
+
+                    propHistArea.selectAll("rect.proportion").data(Object.entries(propDict))
+                        .join("rect")
+                        .attr("class", 'proportion')
+                        .transition().duration(200)
+                        .attr("x", d=> histXScale(d[0]))
+                        .attr("y", d=> propHistYScale(d[1]))
+                        .attr("width", histXScale.bandwidth())
+                        .attr("height", d=> chartHeight - propHistYScale(d[1]))
+                        .attr("fill", function(d){
+                            if (d[0] == "Friday"){return "#d62f2f"}
+                            else{return "#4a4444"}
+                        });
+                    
+                }
 
 
                 // line chart
