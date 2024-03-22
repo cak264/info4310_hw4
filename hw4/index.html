@@ -47,7 +47,7 @@
                 left: 50px;
             }
 
-            input {
+            #date-input {
                 position: absolute;
                 top: -30px;
                 left: 200px;
@@ -66,8 +66,65 @@
             }
 
             p {
-                padding: 10px;
+                padding-left: 10px;
                 margin: 5px;
+            }
+
+            #lc_div, #year-filter {
+                padding-bottom: 50px;
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-start;
+                align-items: flex-start;
+            }
+
+            #linechart {
+                width: 70%;
+                height: 600px;
+            }
+
+            #filters {
+                margin-top: 85px;
+                margin-left: 30px;
+                height: 550px;
+                width: 400px;
+                border: 1px solid black;
+            }
+
+            h2 {
+                margin-top: 10px;
+                margin-left: 10px;
+            }
+
+            #yearInput, #lc_update {
+                margin-top: 3px;
+                margin-right: 8px;
+            }
+
+            #lc_h1 {
+                margin-top: 80px;
+            }
+
+            button {
+                /* border-radius: 5px; */
+                font-family: "Times New Roman", Times, serif;
+                padding: 5px;
+                /* border: 1px solid black; */
+                border: none;
+                height: 28px;
+                transition-duration: 0.4s;
+            }
+
+            button:hover{
+                background-color: #4a4444;
+                color: white;
+            }
+
+            input {
+                width: 50px;
+                height: 25px;
+                border-radius: 0px;
+                border: 1px solid black;
             }
 
         </style>
@@ -86,7 +143,19 @@
                 <button id="submit">Update</button>
             </div>
 
-            <svg id="linechart" height="600" width="800"></svg>
+            <h1 id="lc_h1">An Exploration of Birth Trends Across Time</h1>
+            <div id="lc_div">
+                <svg id="linechart" height="600" width="800"></svg>
+                <div id="filters">
+                    <h2>Tailor Your Exploration</h2>
+                    <p id="yearMessage"></p>
+                    <div id="year-filter">
+                        <p>Enter Year (1994-2014):</p>
+                        <input type="number" id="yearInput" min="1994" max="2014">
+                        <button id="lc_update">Update</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -254,7 +323,7 @@
                       .attr("stroke", "none");
                     countPanel.selectAll("text.count-label")
                             .text("");
-                    
+
                 })
 
                 propHistArea.selectAll("rect.proportion").on("mouseover", function(event, d){
@@ -275,7 +344,7 @@
                       .attr("stroke", "none");
                     propPanel.selectAll("text.prop-label")
                             .text("");
-                    
+
                 })
 
                 // panel
@@ -338,19 +407,19 @@
                     propHistogram.attr("visibility", "visible");
                     countPanel.style("visibility", "hidden");
                     propPanel.style("visibility", "visible");
-                    
+
                 });
 
                 // date input
 
                 let submit = d3.select("#submit");
-                
+
                 submit.on("click", function(){
                     let date = parseInt(document.getElementById("date-input").value);
                     if (date>0 & date<32){
                         updateDate(date);
                     }
-                        
+
                 })
 
                 function updateDate(date){
@@ -388,7 +457,7 @@
                             if (d[1] == Math.min(...Object.values(propDict))){return "#d62f2f"}
                             else{return "#4a4444"}
                         });
-                    
+
                     if ([1, 21, 31].includes(date)){
                         d3.select("#count-title").text("Births by Count on the "+date.toString()+"st of each month")
                         d3.select("#prop-title").text("Ratio of Average Births on the "+date.toString()+"st to Births on All Other Dates")
@@ -405,8 +474,8 @@
                         d3.select("#count-title").text("Births by Count on the "+date.toString()+"th of each month")
                         d3.select("#prop-title").text("Ratio of Average Births on the "+date.toString()+"th to Births on All Other Dates")
                     }
-                    
-                    
+
+
                 }
 
 
@@ -416,6 +485,7 @@
                                 .attr('transform', `translate(${lc_margins.left},${lc_margins.top})`);
 
                 function drawLineChart(year){
+
                     const dataYear = births.filter(d => d.year === year);
 
                     dataYear.forEach(d => {
@@ -423,6 +493,7 @@
                     });
 
                     const averageBirths = d3.mean(dataYear, d => d.births);
+                    console.log(averageBirths);
 
                     const lcxScale = d3.scaleTime().domain(d3.extent(dataYear, d => d.date)).range([0, lchartWidth]);
                     const lcyScale = d3.scaleLinear().domain([d3.min(dataYear, d => d.births) - averageBirths, d3.max(dataYear, d => d.births) - averageBirths]).range([lchartHeight, 0]);
@@ -432,10 +503,13 @@
                         .x(d => lcxScale(d.date))
                         .y(d => lcyScale(d.births - averageBirths));
 
+                    linechart.selectAll('.x-axis, .y-axis, .gridlines, .average-line, .line-chart, .point').remove();
+
                     const lcxAxis = d3.axisBottom(lcxScale)
                         .tickFormat(d3.timeFormat("%b"));
                     linechart.append('g')
                         .attr('transform', `translate(${lc_margins.left},${lchartHeight + lc_margins.top+20})`)
+                        .attr('class', 'x-axis')
                         .call(lcxAxis);
 
                     const lcyAxis = d3.axisLeft(lcyScale)
@@ -450,6 +524,7 @@
                         });
                     linechart.append('g')
                         .attr('transform', `translate(${lc_margins.left-10},${lc_margins.top})`)
+                        .attr('class', 'y-axis')
                         .call(lcyAxis);
 
                     let lcleftGridlines = d3.axisLeft(lcyScale)
@@ -464,7 +539,7 @@
                         .attr("class", "average-line")
                         .attr("x1", lc_margins.left-60) //-60
                         .attr("y1", lcyScale(0) + lc_margins.top-10)
-                        .attr("x2", lc_margins.left + lchartWidth)
+                        .attr("x2", lc_margins.left + lchartWidth-40)
                         .attr("y2", lcyScale(0) + lc_margins.top-10)
                         .style("stroke", "#d62f2f")
                         .style("stroke-width", 2);
@@ -483,7 +558,7 @@
                         .join("circle")
                         .attr("class", "point")
                         .attr("cx", d => lcxScale(d.date))
-                        .attr("cy", d => lcyScale(d.births)+800)
+                        .attr("cy", d => lcyScale(d.births-averageBirths))
                         .attr("r", 5)
                         .style("fill", "black")
                         .style("opacity", 0);
@@ -507,7 +582,26 @@
 
                 };
 
-                drawLineChart(2001);
+                //updating line chart
+                let update = d3.select("#lc_update");
+                let yearMessage = d3.select("#yearMessage")
+                                    .html("You are currently viewing the distribution of births for <b>1994</b>. The average number of births for this year is <b>10829</b>.");
+
+                update.on("click", function(event, d){
+                    const yearInput = parseInt(document.getElementById("yearInput").value);
+                    const dataYear = births.filter(d => d.year === yearInput);
+                    const averageBirths = Math.round(d3.mean(dataYear, d => d.births));
+                    yearMessage.html("You are currently viewing the distribution of births for <b>"+yearInput+"</b>. The average number of births for this year is <b>"+averageBirths+"</b>.");
+                    if (yearInput >= 1994 && yearInput <= 2014) {
+                        drawLineChart(yearInput);
+                    } else {
+                        alert("Please enter a year between 1994 and 2014.");
+                    }
+                })
+
+
+
+                drawLineChart(1994);
 
             }
 
