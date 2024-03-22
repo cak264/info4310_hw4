@@ -1,7 +1,7 @@
 <html>
     <head>
         <h1>US Births and Birth Superstitions</h1>
-        <h3>Cameron Kull, cak264 & Marie Williams, mcw242</h3>
+        <h3 id="head_h3">Cameron Kull, cak264 & Marie Williams, mcw242</h3>
         <script src="https://d3js.org/d3.v7.min.js"></script>
 
         <style>
@@ -14,7 +14,7 @@
                 align-items: center;
             }
 
-            h1, h3{
+            h1, #head_h3{
                 text-align: center;
                 position: relative;
                 top: 50px;
@@ -43,14 +43,19 @@
 
             #propButton {
                 position: absolute;
-                top: -70px;
                 left: 50px;
+            }
+
+            #countsButton, #propButton {
+                top: -80px;
+                height: 35px;
+                width: 120px;
             }
 
             #date-input {
                 position: absolute;
-                top: -30px;
-                left: 200px;
+                top: -32px;
+                left: 190px;
             }
 
             #select-a-date {
@@ -61,22 +66,25 @@
 
             #submit {
                 position: absolute;
-                top: -30px;
-                left: 275px;
+                top: -33px;
+                left: 250px;
+                height: 27px;
             }
 
             p {
                 padding-left: 10px;
                 margin: 5px;
+                margin-right: 10px;
             }
 
             #lc_div, #year-filter {
-                padding-bottom: 50px;
+                /* padding-bottom: 50px; */
                 display: flex;
                 flex-direction: row;
                 justify-content: flex-start;
                 align-items: flex-start;
             }
+
 
             #linechart {
                 width: 70%;
@@ -85,15 +93,14 @@
 
             #filters {
                 margin-top: 85px;
-                margin-left: 30px;
-                height: 550px;
+                height: 380px;
                 width: 400px;
                 border: 1px solid black;
             }
 
             h2 {
                 margin-top: 10px;
-                margin-left: 10px;
+                margin-left: 15px;
             }
 
             #yearInput, #lc_update {
@@ -111,7 +118,7 @@
                 padding: 5px;
                 /* border: 1px solid black; */
                 border: none;
-                height: 28px;
+                height: 25px;
                 transition-duration: 0.4s;
             }
 
@@ -127,6 +134,12 @@
                 border: 1px solid black;
             }
 
+            .box_h3 {
+                margin-left: 15px;
+                margin-top: 8px;
+                margin-bottom: 8px;
+            }
+
         </style>
     </head>
     <body>
@@ -134,26 +147,31 @@
         <br>
         <div id="all">
             <div id="day_of_week_container">
-                <button id="countsButton">Counts View</button>
-                <button id="propButton">Proportions View</button>
+                <!-- <p>Select Your View: </p> -->
+                <button id="countsButton">View Counts</button>
+                <button id="propButton">View Proportions</button>
                 <svg id="day_of_week_svg2" height="600" width="600"></svg>
                 <svg id="day_of_week_svg" height="600" width="600"></svg>
-                <text id="select-a-date">Enter a Date (1 - 31)</text>
+                <text id="select-a-date">Enter a Date (1 - 31): </text>
                 <input type="text" id="date-input" minlength="1" maxlength="2" size="4"></input>
                 <button id="submit">Update</button>
             </div>
 
-            <h1 id="lc_h1">An Exploration of Birth Trends Across Time</h1>
+            <h1 id="lc_h1">Birth Trends Over A Year</h1>
             <div id="lc_div">
                 <svg id="linechart" height="400" width="1000"></svg>
                 <div id="filters">
                     <h2>Tailor Your Exploration</h2>
                     <p id="yearMessage"></p>
+                    <h3 class="box_h3">Year Selection</h3>
+                    <p>Curious about a specific year? Enter a year of your choosing, between 1994 and 2014 below, to see the birth trends for that year!</p>
                     <div id="year-filter">
                         <p>Enter Year (1994-2014):</p>
                         <input type="number" id="yearInput" min="1994" max="2014">
                         <button id="lc_update">Update</button>
                     </div>
+                    <h3 class="box_h3">Day Selection</h3>
+                    <p>Hover over any point to see the number of births recorded for that day, or enter a date below to learn more about it!</p>
                 </div>
             </div>
         </div>
@@ -309,7 +327,7 @@
                     d3.select(this)
                       .attr("stroke", "#c4c2c2")
                       .attr("stroke-width", 3);
-                    countPanel.append("text")
+                    countPanel.append("p")
                         .attr("x", 10)
                         .attr("y", 400)
                         .text(d[1].toString()+" Births")
@@ -321,7 +339,7 @@
                 histArea.selectAll("rect.selectedDate").on("mouseout", function(event, d){
                     d3.select(this)
                       .attr("stroke", "none");
-                    countPanel.selectAll("text.count-label")
+                    countPanel.selectAll("p.count-label")
                             .text("");
 
                 })
@@ -330,10 +348,10 @@
                     d3.select(this)
                       .attr("stroke", "#c4c2c2")
                       .attr("stroke-width", 3);
-                    propPanel.append("text")
+                    propPanel.append("p")
                         .attr("x", 0)
                         .attr("y", 0)
-                        .text(thirteenthsDict[d[0]].toString()+" Births : "+nonThirteenthsDict[d[0]].toString()+" Births")
+                        .text("Birth Ratio: "+ thirteenthsDict[d[0]].toString()+" to "+nonThirteenthsDict[d[0]].toString()+" Births")
                         .style("font-size", 16)
                         .style("font-weight", "bold")
                         .attr("class", "prop-label");
@@ -342,7 +360,7 @@
                 propHistArea.selectAll("rect.proportion").on("mouseout", function(event, d){
                     d3.select(this)
                       .attr("stroke", "none");
-                    propPanel.selectAll("text.prop-label")
+                    propPanel.selectAll("p.prop-label")
                             .text("");
 
                 })
@@ -361,7 +379,7 @@
                           .style("height", "500px")
                           .style("visibility", "hidden");
 
-                countPanel.append("text")
+                countPanel.append("h2")
                           .attr("id", "count-title")
                           .attr("x", 20)
                           .attr("y", 80)
@@ -382,7 +400,7 @@
                           .style("height", "500px")
                           .style("visibility", "visible");
 
-                propPanel.append("text")
+                propPanel.append("h2")
                           .attr("id", "prop-title")
                           .attr("x", 20)
                           .attr("y", 80)
@@ -569,7 +587,7 @@
                         lChartArea.append("text")
                             .attr("id", "tooltip")
                             .attr("x", 100)
-                            .attr("y", 20)
+                            .attr("y", 10)
                             .attr("text-anchor", "middle")
                             .text(`${d.date.toDateString()}, Births: ${d.births}`);
                     });
