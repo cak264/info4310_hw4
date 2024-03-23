@@ -77,7 +77,7 @@
                 margin-right: 10px;
             }
 
-            #lc_div, #year-filter {
+            #lc_div, #year-filter, .day-filter {
                 /* padding-bottom: 50px; */
                 display: flex;
                 flex-direction: row;
@@ -92,8 +92,8 @@
             }
 
             #filters {
-                margin-top: 85px;
-                height: 380px;
+                margin-top: 75px;
+                height: 400px;
                 width: 400px;
                 border: 1px solid black;
             }
@@ -103,9 +103,15 @@
                 margin-left: 15px;
             }
 
-            #yearInput, #lc_update {
+            #yearInput, #lc_update, #date_update {
                 margin-top: 3px;
                 margin-right: 8px;
+            }
+
+            #date_update {
+                margin-left: 8px;
+                margin-top: 0px;
+
             }
 
             #lc_h1 {
@@ -159,7 +165,7 @@
 
             <h1 id="lc_h1">Birth Trends Over A Year</h1>
             <div id="lc_div">
-                <svg id="linechart" height="400" width="1000"></svg>
+                <svg id="linechart" height="420" width="1000"></svg>
                 <div id="filters">
                     <h2>Tailor Your Exploration</h2>
                     <p id="yearMessage"></p>
@@ -172,6 +178,16 @@
                     </div>
                     <h3 class="box_h3">Day Selection</h3>
                     <p>Hover over any point to see the number of births recorded for that day, or enter a date below to learn more about it!</p>
+                    <div class="day-filter">
+                        <p>Enter Month (1-12):</p>
+                        <input type="number" id="monthInput" min="1" max="12">
+                    </div>
+                    <div class="day-filter">
+                        <p>Enter Day of the Month (1-31):</p>
+                        <input type="number" id="dayInput" min="1" max="31">
+                        <button id="date_update">Update</button>
+                    </div>
+                    <p id="dayMessage"></p>
                 </div>
             </div>
         </div>
@@ -202,7 +218,7 @@
             // Data
             let requestData = async function(){
                 let births = await d3.csv("US_births_1994-2014.csv", d3.autoType);
-                console.log(births);
+                // console.log(births);
 
                 let histArea=histogram.append("g")
                                 .attr("class", "histArea")
@@ -214,9 +230,9 @@
 
                 // selecting just the 13ths
                 let thirteenths = births.filter(b=> b.date_of_month==13);
-                console.log(thirteenths);
+                // console.log(thirteenths);
                 let nonThirteenths = births.filter(b=> b.date_of_month!=13);
-                console.log(nonThirteenths);
+                // console.log(nonThirteenths);
 
                 // dictionary of avgs per day of week
                 let bin = d3.bin().value(d=> d.day_of_week)
@@ -243,15 +259,15 @@
                 };
 
                 let thirteenthsDict = dowDict(thirteenths);
-                console.log(thirteenthsDict);
+                // console.log(thirteenthsDict);
                 let nonThirteenthsDict = dowDict(nonThirteenths);
-                console.log(nonThirteenthsDict);
+                // console.log(nonThirteenthsDict);
 
                 let propDict = {};
                 for (let key in thirteenthsDict){
                     propDict[key] = thirteenthsDict[key]/nonThirteenthsDict[key];
                 }
-                console.log(propDict);
+                // console.log(propDict);
 
                 let histXScale = d3.scaleBand().domain(Object.keys(thirteenthsDict)).range([0,chartWidth]);
                 let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(thirteenthsDict))-1000, Math.max(...Object.values(thirteenthsDict))+1000]).range([chartHeight, 0]);
@@ -369,7 +385,7 @@
 
 
                 let countPanel = d3.select("#day_of_week_container").append("g");
-                console.log(countPanel);
+                // console.log(countPanel);
                 countPanel.style("border", "1px solid black")
                           .attr("class", "count-panel")
                           .style("position", "absolute")
@@ -502,13 +518,14 @@
                                 // .attr("class", "linecArea")
                                 .attr('transform', `translate(${lc_margins.left},${lc_margins.top})`);
 
-                function drawLineChart(year){
+                function drawLineChart(year, highlightDate = null){
 
                     const dataYear = births.filter(d => d.year === year);
 
                     dataYear.forEach(d => {
                         d.date = new Date(d.year, d.month-1, d.date_of_month);
                     });
+                    console.log(dataYear);
 
                     const averageBirths = d3.mean(dataYear, d => d.births);
                     console.log(averageBirths);
@@ -584,6 +601,13 @@
                     circles.on("mouseover", function(event, d) {
                         d3.select(this)
                             .style("opacity", 1);
+                        lChartArea.append("rect")
+                            .attr("x", -10)
+                            .attr("y", 0)
+                            .attr("width", 215)
+                            .attr("height", 30)
+                            .attr("id","rect")
+                            .style("fill","white");
                         lChartArea.append("text")
                             .attr("id", "tooltip")
                             .attr("x", 100)
@@ -595,8 +619,14 @@
                     circles.on("mouseout", function(event, d) {
                         d3.select(this).style("opacity", 0);
                         d3.select("#tooltip").remove();
+                        d3.select("#rect").remove();
                     });
 
+                    if (highlightDate) {
+                        const { year, month, day } = highlightDate;
+                        console.log(lcxScale);
+                        highlightSelectedDate(year, month, day, lcxScale, lcyScale, dataYear, averageBirths);
+                    }
 
                 };
 
@@ -604,12 +634,14 @@
                 let update = d3.select("#lc_update");
                 let yearMessage = d3.select("#yearMessage")
                                     .html("You are currently viewing the distribution of births for <b>1994</b>. The average number of births for this year is <b>10829</b>.");
+                let dayMessage = d3.select("#dayMessage");
 
                 update.on("click", function(event, d){
                     const yearInput = parseInt(document.getElementById("yearInput").value);
                     const dataYear = births.filter(d => d.year === yearInput);
                     const averageBirths = Math.round(d3.mean(dataYear, d => d.births));
                     yearMessage.html("You are currently viewing the distribution of births for <b>"+yearInput+"</b>. The average number of births for this year is <b>"+averageBirths+"</b>.");
+                    dayMessage.html("");
                     if (yearInput >= 1994 && yearInput <= 2014) {
                         drawLineChart(yearInput);
                     } else {
@@ -617,7 +649,69 @@
                     }
                 })
 
+                function highlightSelectedDate(year, month, day, lcxScale, lcyScale, data, avgbirths) {
+                    const selectedDate = new Date(year, month - 1, day);
 
+                    const selectedDataPoint = data.find(d => {
+                        return d.date.getFullYear() === year &&
+                               d.date.getMonth() === month - 1 &&
+                               d.date.getDate() === day;
+                    });
+
+
+                    if (selectedDataPoint) {
+                        let highlightedCircle = lChartArea.append("circle")
+                            .attr("class", "highlighted-point")
+                            .attr("cx", lcxScale(selectedDate))
+                            .attr("cy", lcyScale(selectedDataPoint.births - avgbirths))
+                            .attr("r", 5)
+                            .style("fill", "red")
+                            .style("stroke", "red");
+
+                            highlightedCircle.on("mouseover", function(event, d) {
+                                d3.select(this).style("r", 8);
+                                lChartArea.append("rect")
+                                    .attr("x", -10)
+                                    .attr("y", 0)
+                                    .attr("width", 215)
+                                    .attr("height", 30)
+                                    .attr("id","rect")
+                                    .style("fill","white");
+                                lChartArea.append("text")
+                                    .attr("id", "tooltip")
+                                    .attr("x", 100)
+                                    .attr("y", 10)
+                                    .attr("text-anchor", "middle")
+                                    .text(`${selectedDataPoint.date.toDateString()}, Births: ${selectedDataPoint.births}`);
+                            });
+
+                            highlightedCircle.on("mouseout", function(event, d) {
+                                d3.select(this).style("r", 5);
+                                d3.select("#tooltip").remove();
+                                d3.select("#rect").remove();
+                            });
+
+                            dayMessage.html(`<b>Selected Date:</b> ${selectedDataPoint.date.toDateString()} <b>Births:</b> ${selectedDataPoint.births}`);
+
+
+                    } else {
+                        alert("No data available for the entered date.");
+                    }
+                }
+
+                let date_update = d3.select("#date_update");
+
+                date_update.on("click", function(event, d){
+                    const year = parseInt(document.getElementById("yearInput").value)|| 1994;
+                    const month = parseInt(document.getElementById("monthInput").value);
+                    const day = parseInt(document.getElementById("dayInput").value);
+
+                    if (year >= 1994 && year <= 2014 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                        drawLineChart(year, {year: year, month: month, day: day});
+                    } else {
+                        alert("Please enter valid values for year (1994-2014), month (1-12), and day (1-31).");
+                    }
+                })
 
                 drawLineChart(1994);
 
