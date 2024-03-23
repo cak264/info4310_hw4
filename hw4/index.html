@@ -98,10 +98,11 @@
                 border: 1px solid black;
             }
 
-            h2 {
+            h2, #prop-subtitle {
                 margin-top: 10px;
                 margin-left: 15px;
             }
+
 
             #yearInput, #lc_update, #date_update {
                 margin-top: 3px;
@@ -218,7 +219,17 @@
             // Data
             let requestData = async function(){
                 let births = await d3.csv("US_births_1994-2014.csv", d3.autoType);
-                // console.log(births);
+                console.log(births);
+                let holidays = [[1,1], [7,4], [12, 25], [11,11], [2,14], [3,17], [5,5], [10,31], [12,31]];
+                let birthsNoHolidays = births;
+                
+                holidays.forEach(holiday => {
+                    birthsNoHolidays = birthsNoHolidays.filter(b=> {
+                        return b.month !== holiday[0] || b.date_of_month !== holiday[1];
+                    })
+                })
+                
+                //console.log(birthsNoHolidays);
 
                 let histArea=histogram.append("g")
                                 .attr("class", "histArea")
@@ -229,16 +240,12 @@
                                 .attr('transform', `translate(${margins.left},${margins.top})`);
 
                 // selecting just the 13ths
-                let thirteenths = births.filter(b=> b.date_of_month==13);
-                // console.log(thirteenths);
-                let nonThirteenths = births.filter(b=> b.date_of_month!=13);
-                // console.log(nonThirteenths);
+                let thirteenths = birthsNoHolidays.filter(b=> b.date_of_month==13);
+                let nonThirteenths = birthsNoHolidays.filter(b=> b.date_of_month!=13);
 
                 // dictionary of avgs per day of week
                 let bin = d3.bin().value(d=> d.day_of_week)
                                   .thresholds([1,2,3,4,5,6,7]);
-                //let dowBins = bin(thirteenths);
-                //console.log(dowBins);
                 let dowConverter = d3.scaleOrdinal().domain([1,2,3,4,5,6,7]).range(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
 
                 function dowDict(data){
@@ -259,15 +266,7 @@
                 };
 
                 let thirteenthsDict = dowDict(thirteenths);
-                // console.log(thirteenthsDict);
                 let nonThirteenthsDict = dowDict(nonThirteenths);
-                // console.log(nonThirteenthsDict);
-
-                let propDict = {};
-                for (let key in thirteenthsDict){
-                    propDict[key] = thirteenthsDict[key]/nonThirteenthsDict[key];
-                }
-                // console.log(propDict);
 
                 let histXScale = d3.scaleBand().domain(Object.keys(thirteenthsDict)).range([0,chartWidth]);
                 let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(thirteenthsDict))-1000, Math.max(...Object.values(thirteenthsDict))+1000]).range([chartHeight, 0]);
@@ -309,77 +308,12 @@
                 createAxes(histYScale, histogram, "Average Birth Counts on the 13th, 1994-2014");
                 createAxes(propHistYScale, propHistogram, "Ratio of Births on the 13th to Births on All Other Dates");
 
-                // add bars
-
-                histArea.selectAll("rect.selectedDate").data(Object.entries(thirteenthsDict))
-                        .join("rect")
-                        .attr("class", 'selectedDate')
-                        .attr("x", d=> histXScale(d[0]))
-                        .attr("y", d=> histYScale(d[1]))
-                        .attr("width", histXScale.bandwidth())
-                        .attr("height", d=> chartHeight - histYScale(d[1]))
-                        .attr("fill", "#4a4444");
-
+                updateDate(13);
                 histArea.raise();
-
-                propHistArea.selectAll("rect.proportion").data(Object.entries(propDict))
-                        .join("rect")
-                        .attr("class", 'proportion')
-                        .attr("x", d=> histXScale(d[0]))
-                        .attr("y", d=> propHistYScale(d[1]))
-                        .attr("width", histXScale.bandwidth())
-                        .attr("height", d=> chartHeight - propHistYScale(d[1]))
-                        .attr("fill", function(d){
-                            if (d[0] == "Friday"){return "#d62f2f"}
-                            else{return "#4a4444"}
-                        });
-
                 propHistArea.raise();
                 histogram.attr("visibility", "hidden");
 
-                // add bar interaction
 
-                histArea.selectAll("rect.selectedDate").on("mouseover", function(event, d){
-                    d3.select(this)
-                      .attr("stroke", "#c4c2c2")
-                      .attr("stroke-width", 3);
-                    countPanel.append("p")
-                        .attr("x", 10)
-                        .attr("y", 400)
-                        .text(d[1].toString()+" Births")
-                        .style("font-size", 17)
-                        .style("font-weight", "bold")
-                        .attr("class", "count-label");
-                })
-
-                histArea.selectAll("rect.selectedDate").on("mouseout", function(event, d){
-                    d3.select(this)
-                      .attr("stroke", "none");
-                    countPanel.selectAll("p.count-label")
-                            .text("");
-
-                })
-
-                propHistArea.selectAll("rect.proportion").on("mouseover", function(event, d){
-                    d3.select(this)
-                      .attr("stroke", "#c4c2c2")
-                      .attr("stroke-width", 3);
-                    propPanel.append("p")
-                        .attr("x", 0)
-                        .attr("y", 0)
-                        .text("Birth Ratio: "+ thirteenthsDict[d[0]].toString()+" to "+nonThirteenthsDict[d[0]].toString()+" Births")
-                        .style("font-size", 16)
-                        .style("font-weight", "bold")
-                        .attr("class", "prop-label");
-                })
-
-                propHistArea.selectAll("rect.proportion").on("mouseout", function(event, d){
-                    d3.select(this)
-                      .attr("stroke", "none");
-                    propPanel.selectAll("p.prop-label")
-                            .text("");
-
-                })
 
                 // panel
 
@@ -412,7 +346,7 @@
                           .style("position", "absolute")
                           .style("bottom", "65px")
                           .style("left", "650px")
-                          .style("width", "400px")
+                          .style("width", "500px")
                           .style("height", "500px")
                           .style("visibility", "visible");
 
@@ -425,7 +359,12 @@
                           .style("font-weight", "bold");
 
                 propPanel.append("p")
-                          .text("This graphs compares the average number of births on the any given date of each month to the average number of births on all other dates for each month over the span of 1994 - 2014. When looking at the 13th, we can see the ratio of births on the 13th to births not on the 13th for Friday is much lower than the other days of the week. This unveils that if a baby is born on a Friday, the parents prefer the date of that Friday to not be the 13th, showing that people are supersticious about Friday the 13th. Other dates that seem to potentially be supersticiously impacted are FILL THE REST IN... ")
+                          .text("This graphs compares the average number of births on the any given date of each month to the average number of births on all other dates for each month over the span of 1994 - 2014.  The ratio metric along the y axis represents the comparison of average births on the specified date, to average births on any other date. Given this, a ratio of 1.0 occurs when these average births counts are equal to each other.");
+                propPanel.append("h3")
+                         .text("Dates of Note")
+                         .attr("id", "prop-subtitle");
+                propPanel.append("p")
+                         .text("Some dates that appear to have a more extreme deviation on a certain weekday from the average of the rest of the dates of the month are the Friday the 13th, Monday the 1st, Monday the 5th, Thursday the 22nd, and Monday the 31st. When looking at the 13th, we can see the ratio of births on the 13th to births not on the 13th for Friday is much lower than the other days of the week. This unveils that if a baby is born on a Friday, the parents prefer the date of that Friday to not be the 13th, showing that people are supersticious about Friday the 13th. We can see similar effects with those other dates of note, like Monday the 1st and 31st having a ratio of about 0.97 and 0.93 respectively when the rest of the days of the week have a ratio around of above 1.0. This shows that parents are averse to having their child on a Monday when it is the first or the last day of the month.");
 
 
                 d3.select("#countsButton").on("click", function(){
@@ -458,8 +397,8 @@
 
                 function updateDate(date){
 
-                    let includingDate = births.filter(b=> b.date_of_month == date);
-                    let notIncludingDate = births.filter(b=> b.date_of_month != date);
+                    let includingDate = birthsNoHolidays.filter(b=> b.date_of_month == date);
+                    let notIncludingDate = birthsNoHolidays.filter(b=> b.date_of_month != date);
 
                     let dateDict = dowDict(includingDate);
                     let nonDateDict = dowDict(notIncludingDate);
@@ -509,6 +448,49 @@
                         d3.select("#prop-title").text("Ratio of Average Births on the "+date.toString()+"th to Births on All Other Dates")
                     }
 
+                    // add bar interaction
+
+                    histArea.selectAll("rect.selectedDate").on("mouseover", function(event, d){
+                        d3.select(this)
+                        .attr("stroke", "#c4c2c2")
+                        .attr("stroke-width", 3);
+                        countPanel.append("p")
+                            .attr("x", 10)
+                            .attr("y", 400)
+                            .text(d[1].toString()+" Births")
+                            .style("font-size", 17)
+                            .style("font-weight", "bold")
+                            .attr("class", "count-label");
+                    })
+
+                    histArea.selectAll("rect.selectedDate").on("mouseout", function(event, d){
+                        d3.select(this)
+                        .attr("stroke", "none");
+                        countPanel.selectAll("p.count-label")
+                                .text("");
+
+                    })
+
+                    propHistArea.selectAll("rect.proportion").on("mouseover", function(event, d){
+                        d3.select(this)
+                        .attr("stroke", "#c4c2c2")
+                        .attr("stroke-width", 3);
+                        propPanel.append("p")
+                            .attr("x", 0)
+                            .attr("y", 0)
+                            .text("Birth Ratio: "+ dateDict[d[0]].toString()+" to "+nonDateDict[d[0]].toString()+" Births")
+                            .style("font-size", 16)
+                            .style("font-weight", "bold")
+                            .attr("class", "prop-label");
+                    })
+
+                    propHistArea.selectAll("rect.proportion").on("mouseout", function(event, d){
+                        d3.select(this)
+                        .attr("stroke", "none");
+                        propPanel.selectAll("p.prop-label")
+                                .text("");
+
+                    })
 
                 }
 
