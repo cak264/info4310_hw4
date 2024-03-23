@@ -71,6 +71,19 @@
                 height: 27px;
             }
 
+            #animate {
+                position: absolute;
+                top: -33px;
+                left: 425px;
+                height: 27px;
+            }
+
+            .animationDate {
+                position: absolute;
+                top: 30px;
+                left: 525px;
+            }
+
             p {
                 padding-left: 10px;
                 margin: 5px;
@@ -162,6 +175,7 @@
                 <text id="select-a-date">Enter a Date (1 - 31): </text>
                 <input type="text" id="date-input" minlength="1" maxlength="2" size="4"></input>
                 <button id="submit">Update</button>
+                <button id="animate">View Change Across the Month</button>
             </div>
 
             <h1 id="lc_h1">Birth Trends Over A Year</h1>
@@ -416,7 +430,7 @@
                         .attr("y", d=> histYScale(d[1]))
                         .attr("width", histXScale.bandwidth())
                         .attr("height", d=> chartHeight - histYScale(d[1]))
-                        .attr("fill", "#4a4444");
+                        .attr("fill", "#2c659e");
 
                     propHistArea.selectAll("rect.proportion").data(Object.entries(propDict))
                         .join("rect")
@@ -452,7 +466,7 @@
 
                     histArea.selectAll("rect.selectedDate").on("mouseover", function(event, d){
                         d3.select(this)
-                        .attr("stroke", "#c4c2c2")
+                        .attr("stroke", "black")
                         .attr("stroke-width", 3);
                         countPanel.append("p")
                             .attr("x", 10)
@@ -492,6 +506,57 @@
 
                     })
 
+                }
+
+                // animate
+
+                d3.select("#animate").on("click", animate);
+
+                let animationDateLabel = d3.select("#day_of_week_container").append("text")
+                                            .attr("x", 0)
+                                            .attr("y", 0)
+                                            .text("1st")
+                                            .style("font-size", 40)
+                                            .style("font-weight", "bold")
+                                            .attr("class", "animationDate")
+                                            .style("visibility", "hidden");
+
+                function animate() {
+                    // Start date: 1st of the month
+                    let currentDate = 1;
+                    let endDate = 31
+
+                    const interval = 500;
+
+                    // Interval function
+                    const animationInterval = setInterval(() => {
+                        // Call updateDate() with the current date
+                        updateDate(currentDate);
+
+                        // set the label appropriately
+                        animationDateLabel.style("visibility", "visible");
+                        if ([1, 21, 31].includes(currentDate)){
+                            animationDateLabel.text(currentDate.toString()+"st")
+                        }
+                        else if ([2, 22].includes(currentDate)){
+                            animationDateLabel.text(currentDate.toString()+"nd")
+                        }
+                        else if ([3, 23].includes(currentDate)){
+                            animationDateLabel.text(currentDate.toString()+"rd")
+                        }
+                        else {
+                            animationDateLabel.text(currentDate.toString()+"th")
+                        }
+
+                        // Increment date by one day
+                        currentDate+=1;
+
+                        // Check if we've reached the end date
+                        if (currentDate > endDate) {
+                            clearInterval(animationInterval);
+                            animationDateLabel.style("visibility", "hidden");
+                        }
+                    }, interval);
                 }
 
 
