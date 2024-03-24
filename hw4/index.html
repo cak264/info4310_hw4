@@ -218,6 +218,7 @@
                 <svg id="avgChart" height="420" width="1000"></svg>
                 <div id="avg_filters">
                     <h2>Filters</h2>
+                    <input type="checkbox" id="holidayCheck">Highlight Holidays</input>
                 </div>
             </div>
 
@@ -432,6 +433,7 @@
 
                 })
 
+
                 function updateDate(date){
 
                     let includingDate = birthsNoHolidays.filter(b=> b.date_of_month == date);
@@ -444,6 +446,7 @@
                     for (let key in dateDict){
                         propDict[key] = dateDict[key]/nonDateDict[key];
                     }
+
 
                     histArea.selectAll("rect.selectedDate").data(Object.entries(dateDict))
                         .join("rect")
@@ -902,6 +905,30 @@
                     d3.select("#rect").remove();
                 });
 
+                // highlighting holidays
+                let holidayCheck = d3.select("#holidayCheck");
+
+                holidayCheck.on("click", function(){
+                    let checkbox = d3.select(this);
+                    if (checkbox.property("checked")){
+                        
+                        holidays.forEach(holiday =>{
+                            // drawLineChart(1994, {year: 1994, month: holiday[0], day: holiday[1]});
+                            console.log(holiday);
+                            avgChartArea.append("circle")
+                            .attr("class", "holiday-circle")
+                            .attr("cx", avgxScale(new Date(1994, holiday[0], holiday[1])))
+                            .attr("cy", avgyScale(500))
+                            .attr("r", 5)
+                            .style("fill", "red")
+                            .style("stroke", "red");
+                        })
+                        
+                    }
+                    else {
+                        console.log("unchecked")
+                    }
+                })
             }
 
             requestData();
