@@ -20,7 +20,7 @@
                 top: 50px;
             }
 
-            #day_of_week_container, #linechart{
+            #day_of_week_container, #linechart, #avgChart{
                 position: relative;
                 display: flex;
                 top: 70px;
@@ -56,11 +56,12 @@
                 position: absolute;
                 top: -32px;
                 left: 190px;
+                height: 34px;
             }
 
             #select-a-date {
                 position: absolute;
-                top: -30px;
+                top: -27px;
                 left: 50px;
             }
 
@@ -68,14 +69,14 @@
                 position: absolute;
                 top: -33px;
                 left: 250px;
-                height: 27px;
+                height: 35px;
             }
 
             #animate {
                 position: absolute;
                 top: -33px;
-                left: 425px;
-                height: 27px;
+                left: 410px;
+                height: 35px;
             }
 
             .animationDate {
@@ -90,7 +91,7 @@
                 margin-right: 10px;
             }
 
-            #lc_div, #year-filter, .day-filter {
+            #lc_div, #year-filter, .day-filter, #avg_div {
                 /* padding-bottom: 50px; */
                 display: flex;
                 flex-direction: row;
@@ -101,10 +102,10 @@
 
             #linechart {
                 width: 70%;
-                height: 600px;
+                height: 500px;
             }
 
-            #filters {
+            #filters, #avg_filters {
                 margin-top: 75px;
                 height: 400px;
                 width: 400px;
@@ -160,6 +161,12 @@
                 margin-bottom: 8px;
             }
 
+            #avgChart {
+                width: 70%;
+                height: 550px;
+
+            }
+
         </style>
     </head>
     <body>
@@ -185,7 +192,7 @@
                     <h2>Tailor Your Exploration</h2>
                     <p id="yearMessage"></p>
                     <h3 class="box_h3">Year Selection</h3>
-                    <p>Curious about a specific year? Enter a year of your choosing, between 1994 and 2014 below, to see the birth trends for that year!</p>
+                    <p>Curious about a specific year? Enter a year of your choosing, between 1994 and 2014, to see the birth trends for that year!</p>
                     <div id="year-filter">
                         <p>Enter Year (1994-2014):</p>
                         <input type="number" id="yearInput" min="1994" max="2014">
@@ -205,6 +212,15 @@
                     <p id="dayMessage"></p>
                 </div>
             </div>
+
+            <h1>Average Birth Trends Over A Year (1994-2014)</h1>
+            <div id="avg_div">
+                <svg id="avgChart" height="420" width="1000"></svg>
+                <div id="avg_filters">
+                    <h2>Filters</h2>
+                </div>
+            </div>
+
         </div>
 
         <script>
@@ -230,19 +246,26 @@
             const lchartWidth = svg_width - lc_margins.left - lc_margins.right;
             const lchartHeight = svg_height - lc_margins.top - lc_margins.bottom;
 
+            const avgchart = d3.select("#avgChart");
+            const avg_width = avgchart.attr("width");
+            const avg_height= avgchart.attr("height");
+            const avg_margins={top: 10, right: 10, bottom: 50, left: 50};
+            const avgChartWidth = avg_width - avg_margins.left - avg_margins.right;
+            const avgChartHeight = avg_height - avg_margins.top - avg_margins.bottom;
+
             // Data
             let requestData = async function(){
                 let births = await d3.csv("US_births_1994-2014.csv", d3.autoType);
                 console.log(births);
                 let holidays = [[1,1], [7,4], [12, 25], [11,11], [2,14], [3,17], [5,5], [10,31], [12,31]];
                 let birthsNoHolidays = births;
-                
+
                 holidays.forEach(holiday => {
                     birthsNoHolidays = birthsNoHolidays.filter(b=> {
                         return b.month !== holiday[0] || b.date_of_month !== holiday[1];
                     })
                 })
-                
+
                 //console.log(birthsNoHolidays);
 
                 let histArea=histogram.append("g")
@@ -340,7 +363,7 @@
                           .style("bottom", "65px")
                           .style("left", "650px")
                           .style("width", "400px")
-                          .style("height", "500px")
+                          .style("height", "520px")
                           .style("visibility", "hidden");
 
                 countPanel.append("h2")
@@ -361,7 +384,7 @@
                           .style("bottom", "65px")
                           .style("left", "650px")
                           .style("width", "500px")
-                          .style("height", "500px")
+                          .style("height", "520px")
                           .style("visibility", "visible");
 
                 propPanel.append("h2")
@@ -373,7 +396,7 @@
                           .style("font-weight", "bold");
 
                 propPanel.append("p")
-                          .text("This graphs compares the average number of births on the any given date of each month to the average number of births on all other dates for each month over the span of 1994 - 2014.  The ratio metric along the y axis represents the comparison of average births on the specified date, to average births on any other date. Given this, a ratio of 1.0 occurs when these average births counts are equal to each other.");
+                          .text("This graphs compares the average number of births on any given day of each month to the average number of births on all other dates for each month over the span of 1994 - 2014.  The ratio metric along the y axis represents the comparison of average births on the specified date, to average births on any other date. Given this, a ratio of 1.0 occurs when these average births counts are equal to each other.");
                 propPanel.append("h3")
                          .text("Dates of Note")
                          .attr("id", "prop-subtitle");
@@ -761,6 +784,123 @@
                 })
 
                 drawLineChart(1994);
+
+
+                //avg chart
+                let avgChartArea = avgchart.append("g")
+                                .attr('transform', `translate(${avg_margins.left},${avg_margins.top})`);
+
+                //creating dictionary with averages
+                const avgBirths = {};
+                const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+                for (let month = 1; month <= 12; month++) {
+                    const days = daysInMonth[month - 1];
+
+                    for (let day = 1; day <= days; day++) {
+                        const date = new Date(1992, month - 1, day);
+
+                        const birthsOnDate = births.filter(d => d.month === month && d.date_of_month === day);
+                        const totalBirths = birthsOnDate.reduce((sum, d) => sum + d.births, 0);
+                        const averageBirths = birthsOnDate.length > 0 ? totalBirths / birthsOnDate.length : 0;
+
+                        avgBirths[date] = averageBirths;
+                    }
+                }
+
+                const feb29 = births.filter(d => [1996, 2000, 2004, 2008, 2012].includes(d.year) && d.month === 2 && d.date_of_month === 29);
+                const totalBirthsFeb29 = feb29.reduce((sum, d) => sum + d.births, 0);
+                const avgBirthsFeb29 = totalBirthsFeb29/feb29.length;
+
+                const feb29_1992 = new Date(1992, 1, 29);
+                avgBirths[feb29_1992] = avgBirthsFeb29;
+
+                const dates = Object.keys(avgBirths).map(dateStr => new Date(dateStr));
+                const averageBirths = Object.values(avgBirths);
+                console.log(dates);
+                console.log(averageBirths);
+
+                const avg_sum = averageBirths.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+                const avg_avg = avg_sum / averageBirths.length;
+                console.log(avg_avg);
+
+                const avgxScale = d3.scaleTime().domain(d3.extent(dates)).range([0, avgChartWidth]);
+                const avgyScale = d3.scaleLinear().domain([d3.min(averageBirths) - avg_avg, d3.max(averageBirths) - avg_avg]).range([avgChartHeight, 0]);
+
+                const line = d3.line()
+                    .x(d => avgxScale(dates[d]))
+                    .y(d => avgyScale(averageBirths[d] - avg_avg));
+
+                const avgxAxis = d3.axisBottom(avgxScale)
+                    .tickFormat(d3.timeFormat("%b"));
+                avgchart.append('g')
+                    .attr('transform', `translate(${avg_margins.left},${avgChartHeight + avg_margins.top+10})`)
+                    .attr('class', 'x-axis')
+                    .call(avgxAxis);
+
+                const avgyAxis = d3.axisLeft(avgyScale)
+                avgchart.append('g')
+                    .attr('transform', `translate(${avg_margins.left-10},${avg_margins.top})`)
+                    .attr('class', 'y-axis')
+                    .call(avgyAxis);
+
+                let avgleftGridlines = d3.axisLeft(avgyScale)
+                                    .tickSize(-avgChartWidth-10)
+                                    .tickFormat('');
+                avgChartArea.append('g')
+                    .attr('class', 'gridlines')
+                    .attr('transform',`translate(${avg_margins.left-60}, 0)`)
+                    .call(avgleftGridlines);
+
+                avgChartArea.append("line")
+                    .attr("class", "average-line")
+                    .attr("x1", avg_margins.left-60)
+                    .attr("y1", avgyScale(0) + avg_margins.top-10)
+                    .attr("x2", avg_margins.left + avgChartWidth-40)
+                    .attr("y2", avgyScale(0) + avg_margins.top-10)
+                    .style("stroke", "#d62f2f")
+                    .style("stroke-width", 2);
+
+                avgChartArea.append("path")
+                    .datum(d3.range(dates.length-1))
+                    .attr("class", "line-chart")
+                    .attr("fill", "none")
+                    .attr("stroke", "#4a4444")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", line);
+
+                let circles = avgChartArea.selectAll("circle").data(d3.range(dates.length-1))
+                    .join("circle")
+                    .attr("class", "point")
+                    .attr("cx", d => avgxScale(dates[d]))
+                    .attr("cy", d => avgyScale(averageBirths[d]-avg_avg))
+                    .attr("r", 5)
+                    .style("fill", "black")
+                    .style("opacity", 0);
+
+                circles.on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .style("opacity", 1);
+                    avgChartArea.append("rect")
+                        .attr("x", -10)
+                        .attr("y", 0)
+                        .attr("width", 220)
+                        .attr("height", 30)
+                        .attr("id","rect")
+                        .style("fill","white");
+                    avgChartArea.append("text")
+                        .attr("id", "tooltip")
+                        .attr("x", 100)
+                        .attr("y", 10)
+                        .attr("text-anchor", "middle")
+                        .text(`Date: ${dates[d].toLocaleDateString(undefined, {month:'short', day:'numeric'})}, Avg Births: ${Math.round(averageBirths[d])}`)
+                });
+
+                circles.on("mouseout", function(event, d) {
+                    d3.select(this).style("opacity", 0);
+                    d3.select("#tooltip").remove();
+                    d3.select("#rect").remove();
+                });
 
             }
 
