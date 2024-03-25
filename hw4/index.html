@@ -228,7 +228,7 @@
                 <svg id="avgChart" height="420" width="1000"></svg>
                 <div id="avg_filters">
                     <h2>Tailor Your Exploration</h2>
-                    <p>This line chart shows the average number of recorded births associated with every day of the year. This average is only representative of the years 1994-2014.</p>
+                    <p>This line chart shows the average number of recorded births associated with every day of the year, based on birth data between 1994 and 2014. The red average line represents the average number of births recorded per day between 1994-2014, at <b>11174 births</b>.</p>
                     <h3 class="box_h3">Holidays and Special Dates</h3>
                     <input type="checkbox" id="holidayCheck">Highlight Holidays & Other Dates of Note</input>
                     <h3 class="box_h3">Day Selection</h3>
@@ -853,7 +853,7 @@
 
                 const avg_sum = averageBirths.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
                 const avg_avg = avg_sum / averageBirths.length;
-                // console.log(avg_avg);
+                console.log(avg_avg);
 
                 const avgxScale = d3.scaleTime().domain(d3.extent(dates)).range([0, avgChartWidth]);
                 const avgyScale = d3.scaleLinear().domain([d3.min(averageBirths) - avg_avg, d3.max(averageBirths) - avg_avg]).range([avgChartHeight, 0]);
