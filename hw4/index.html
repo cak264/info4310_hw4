@@ -870,6 +870,15 @@
                     .call(avgxAxis);
 
                 const avgyAxis = d3.axisLeft(avgyScale)
+                    .tickFormat(function(d) {
+                        if (d === 0) {
+                            return 'Avg';
+                        } else if (d>0) {
+                            return '+' + d;
+                        } else {
+                            return d;
+                        }
+                    });
                 avgchart.append('g')
                     .attr('transform', `translate(${avg_margins.left-10},${avg_margins.top})`)
                     .attr('class', 'y-axis')
@@ -1029,6 +1038,7 @@
                 let holidayCheck = d3.select("#holidayCheck");
 
                 holidayCheck.on("click", function(){
+                    avgChartArea.selectAll(".added-circle").remove();
                     let checkbox = d3.select(this);
                     if (checkbox.property("checked")){
 
