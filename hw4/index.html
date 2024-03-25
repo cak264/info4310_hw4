@@ -232,7 +232,7 @@
                     <h3 class="box_h3">Holidays and Special Dates</h3>
                     <input type="checkbox" id="holidayCheck">Highlight Holidays & Other Dates of Note</input>
                     <h3 class="box_h3">Day Selection</h3>
-                    <p>Hover over any point to see the number of births recorded for that day, or enter a date below to learn more about it! You can also just enter a day of a month to see patterns over a year.</p>
+                    <p>Hover over any point to see the number of births recorded for that day, or enter a date below to learn more about it! You can also just enter a day of a month to see patterns over a year. Hint: Try 13!</p>
                     <div class="day-filter">
                         <p>Enter Month (1-12):</p>
                         <input type="number" id="avgmonthInput" min="1" max="12">
@@ -242,6 +242,7 @@
                         <input type="number" id="avgdayInput" min="1" max="31">
                         <button id="avg_date_update">Update</button>
                     </div>
+                    <p id="avg_message"></p>
                 </div>
             </div>
 
@@ -840,14 +841,14 @@
 
                 const feb29_1992 = new Date(1992, 1, 29);
                 avgBirths[feb29_1992] = avgBirthsFeb29;
-                console.log(avgBirthsFeb29);
-                console.log(avgBirths[feb29_1992]);
+                // console.log(avgBirthsFeb29);
+                // console.log(avgBirths[feb29_1992]);
 
                 const dates = Object.keys(avgBirths).map(dateStr => new Date(dateStr));
                 const averageBirths = Object.values(avgBirths);
                 dates.splice(59, 0, dates.pop());
                 averageBirths.splice(59, 0, averageBirths.pop());
-                console.log(dates);
+                // console.log(dates);
                 // console.log(averageBirths);
 
                 const avg_sum = averageBirths.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
@@ -899,11 +900,11 @@
                     .attr("stroke-width", 1.5)
                     .attr("d", line);
 
-                let circles = avgChartArea.selectAll("circle").data(d3.range(dates.length))
+                let circles = avgChartArea.selectAll("circle").data(dates)
                     .join("circle")
                     .attr("class", "point")
-                    .attr("cx", d => avgxScale(dates[d]))
-                    .attr("cy", d => avgyScale(averageBirths[d]-avg_avg))
+                    .attr("cx", d => avgxScale(d))
+                    .attr("cy", d => avgyScale(avgBirths[d]-avg_avg))
                     .attr("r", 5)
                     .style("fill", "black")
                     .style("opacity", 0);
@@ -925,7 +926,7 @@
                         .attr("x", 100)
                         .attr("y", 10)
                         .attr("text-anchor", "middle")
-                        .text(`Date: ${dates[d].toLocaleDateString(undefined, {month:'short', day:'numeric'})}, Avg Births: ${Math.round(averageBirths[d])}`)
+                        .text(`Date: ${d.toLocaleDateString(undefined, {month:'short', day:'numeric'})}, Avg Births: ${Math.round(avgBirths[d])}`)
                 });
 
                 points.on("mouseout", function(event, d) {
@@ -933,6 +934,96 @@
                     d3.select("#tooltip").remove();
                     d3.select("#rect").remove();
                 });
+
+                //date update
+                let avg_date_update = d3.select("#avg_date_update");
+
+                avg_date_update.on("click", function(event, d) {
+                    const avgmonthInput = parseInt(document.getElementById("avgmonthInput").value);
+                    const avgdayInput = parseInt(document.getElementById("avgdayInput").value);
+
+                    avgChartArea.selectAll(".added-circle").remove();
+
+                    if (!isNaN(avgmonthInput) && !isNaN(avgdayInput)) {
+                        highlightSelectedDate_avg(avgmonthInput, avgdayInput);
+                    } else if (!isNaN(avgdayInput)) {
+                        highlightSelectedDay(avgdayInput);
+                    } else {
+                        alert("Please enter valid values for month and/or day.");
+                    }
+                });
+
+                function highlightSelectedDate_avg(month, day) {
+                    const matchingDate = dates.find(date => date.getMonth() + 1 === month && date.getDate() === day);
+                    if (matchingDate) {
+                        console.log(matchingDate);
+                        console.log(avgyScale(avgBirths[matchingDate]-avg_avg));
+                        avgChartArea.append("circle")
+                            .attr("class", "added-circle")
+                            .attr("cx", avgxScale(matchingDate))
+                            .attr("cy", avgyScale(avgBirths[matchingDate]-avg_avg))
+                            .attr("r", 5)
+                            .style("fill", "#d62f2f")
+                            .style("opacity", 1)
+                            .on("mouseover", function(event) {
+                                d3.select(this).attr("r", 8);
+                                avgChartArea.append("rect")
+                                    .attr("x", -8)
+                                    .attr("y", 0)
+                                    .attr("width", 220)
+                                    .attr("height", 17)
+                                    .attr("id","rect")
+                                    .style("fill","white");
+                                avgChartArea.append("text")
+                                    .attr("id", "tooltip")
+                                    .attr("x", 100)
+                                    .attr("y", 10)
+                                    .attr("text-anchor", "middle")
+                                    .text(`Date: ${matchingDate.toLocaleDateString(undefined, {month:'short', day:'numeric'})}, Avg Births: ${Math.round(avgBirths[matchingDate])}`)
+                            }).on("mouseout", function(event) {
+                                d3.select(this).attr("r", 5)
+                                d3.select("#tooltip").remove();
+                                d3.select("#rect").remove();
+                            });
+                    } else {
+                        alert("No data available for the entered date.");
+                    }
+                }
+
+                function highlightSelectedDay(day) {
+                    dates.forEach((date) => {
+                        if (date.getDate() === day) {
+                            console.log(date);
+                            avgChartArea.append("circle")
+                                .attr("class", "added-circle")
+                                .attr("cx", avgxScale(date))
+                                .attr("cy", avgyScale(avgBirths[date]-avg_avg))
+                                .attr("r", 5)
+                                .style("fill", "#d62f2f")
+                                .style("opacity", 1)
+                                .on("mouseover", function(event) {
+                                    d3.select(this).attr("r", 8);
+                                    avgChartArea.append("rect")
+                                        .attr("x", -8)
+                                        .attr("y", 0)
+                                        .attr("width", 220)
+                                        .attr("height", 17)
+                                        .attr("id","rect")
+                                        .style("fill","white");
+                                    avgChartArea.append("text")
+                                        .attr("id", "tooltip")
+                                        .attr("x", 100)
+                                        .attr("y", 10)
+                                        .attr("text-anchor", "middle")
+                                        .text(`Date: ${date.toLocaleDateString(undefined, {month:'short', day:'numeric'})}, Avg Births: ${Math.round(avgBirths[date])}`)
+                                }).on("mouseout", function(event) {
+                                    d3.select(this).attr("r", 5)
+                                    d3.select("#tooltip").remove();
+                                    d3.select("#rect").remove();
+                                });
+                        }
+                    });
+                }
 
                 // highlighting holidays
                 let holidayCheck = d3.select("#holidayCheck");
@@ -945,8 +1036,8 @@
                             Object.keys(avgBirths).forEach(d => {
                                 const date = new Date(d);
                                 if (date.getMonth() + 1 === holiday[0] && date.getDate() === holiday[1]) {
-                                    console.log(d);
-                                    console.log(avgBirths[d]);
+                                    // console.log(d);
+                                    // console.log(avgBirths[d]);
                                     avgChartArea.append("circle")
                                         .attr("class", "holiday-circle")
                                         .attr("cx", avgxScale(date))
@@ -955,7 +1046,7 @@
                                         .style("fill", "#d62f2f")
                                         .style("stroke", "#d62f2f")
                                         .on("mouseover", function(event) {
-                                            console.log(d);
+                                            // console.log(d);
                                             d3.select(this)
                                                 .style("opacity", 1);
                                             avgChartArea.append("rect")
@@ -1120,8 +1211,6 @@
                             .attr("x", 120)
                             .attr("y", 135)
                             .text("Leap Day")
-
-
 
                     }
                     else {
