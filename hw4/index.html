@@ -123,7 +123,7 @@
                 margin-right: 8px;
             }
 
-            #date_update {
+            #date_update, #avg_date_update {
                 margin-left: 8px;
                 margin-top: 0px;
 
@@ -165,6 +165,16 @@
                 width: 70%;
                 height: 550px;
 
+            }
+
+            #holidayCheck{
+                height: auto;
+                width: auto;
+                margin-left: 15px;
+            }
+
+            #holidayCheck text {
+                margin-left: 5px;
             }
 
         </style>
@@ -217,8 +227,21 @@
             <div id="avg_div">
                 <svg id="avgChart" height="420" width="1000"></svg>
                 <div id="avg_filters">
-                    <h2>Filters</h2>
-                    <input type="checkbox" id="holidayCheck">Highlight Holidays</input>
+                    <h2>Tailor Your Exploration</h2>
+                    <p>This line chart shows the average number of recorded births associated with every day of the year. This average is only representative of the years 1994-2014.</p>
+                    <h3 class="box_h3">Holidays and Special Dates</h3>
+                    <input type="checkbox" id="holidayCheck">Highlight Holidays & Other Dates of Note</input>
+                    <h3 class="box_h3">Day Selection</h3>
+                    <p>Hover over any point to see the number of births recorded for that day, or enter a date below to learn more about it! You can also just enter a day of a month to see patterns over a year.</p>
+                    <div class="day-filter">
+                        <p>Enter Month (1-12):</p>
+                        <input type="number" id="avgmonthInput" min="1" max="12">
+                    </div>
+                    <div class="day-filter">
+                        <p>Enter Day of the Month (1-31):</p>
+                        <input type="number" id="avgdayInput" min="1" max="31">
+                        <button id="avg_date_update">Update</button>
+                    </div>
                 </div>
             </div>
 
@@ -258,7 +281,7 @@
             let requestData = async function(){
                 let births = await d3.csv("US_births_1994-2014.csv", d3.autoType);
                 console.log(births);
-                let holidays = [[1,1], [7,4], [12, 25], [11,11], [2,14], [3,17], [5,5], [10,31], [12,31]];
+                let holidays = [[1,1], [7,4], [12, 25], [2,14], [3,17], [5,5], [10,31], [12,31], [2, 29], [9,11]];
                 let birthsNoHolidays = births;
 
                 holidays.forEach(holiday => {
@@ -738,8 +761,8 @@
                             .attr("cx", lcxScale(selectedDate))
                             .attr("cy", lcyScale(selectedDataPoint.births - avgbirths))
                             .attr("r", 5)
-                            .style("fill", "red")
-                            .style("stroke", "red");
+                            .style("fill", "#d62f2f")
+                            .style("stroke", "#d62f2f");
 
                             highlightedCircle.on("mouseover", function(event, d) {
                                 d3.select(this).style("r", 8);
@@ -817,15 +840,19 @@
 
                 const feb29_1992 = new Date(1992, 1, 29);
                 avgBirths[feb29_1992] = avgBirthsFeb29;
+                console.log(avgBirthsFeb29);
+                console.log(avgBirths[feb29_1992]);
 
                 const dates = Object.keys(avgBirths).map(dateStr => new Date(dateStr));
                 const averageBirths = Object.values(avgBirths);
+                dates.splice(59, 0, dates.pop());
+                averageBirths.splice(59, 0, averageBirths.pop());
                 console.log(dates);
-                console.log(averageBirths);
+                // console.log(averageBirths);
 
                 const avg_sum = averageBirths.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
                 const avg_avg = avg_sum / averageBirths.length;
-                console.log(avg_avg);
+                // console.log(avg_avg);
 
                 const avgxScale = d3.scaleTime().domain(d3.extent(dates)).range([0, avgChartWidth]);
                 const avgyScale = d3.scaleLinear().domain([d3.min(averageBirths) - avg_avg, d3.max(averageBirths) - avg_avg]).range([avgChartHeight, 0]);
@@ -865,14 +892,14 @@
                     .style("stroke-width", 2);
 
                 avgChartArea.append("path")
-                    .datum(d3.range(dates.length-1))
+                    .datum(d3.range(dates.length))
                     .attr("class", "line-chart")
                     .attr("fill", "none")
                     .attr("stroke", "#4a4444")
                     .attr("stroke-width", 1.5)
                     .attr("d", line);
 
-                let circles = avgChartArea.selectAll("circle").data(d3.range(dates.length-1))
+                let circles = avgChartArea.selectAll("circle").data(d3.range(dates.length))
                     .join("circle")
                     .attr("class", "point")
                     .attr("cx", d => avgxScale(dates[d]))
@@ -881,14 +908,16 @@
                     .style("fill", "black")
                     .style("opacity", 0);
 
-                circles.on("mouseover", function(event, d) {
+                let points = avgChartArea.selectAll(".point");
+
+                points.on("mouseover", function(event, d) {
                     d3.select(this)
                         .style("opacity", 1);
                     avgChartArea.append("rect")
                         .attr("x", -10)
                         .attr("y", 0)
                         .attr("width", 220)
-                        .attr("height", 30)
+                        .attr("height", 15)
                         .attr("id","rect")
                         .style("fill","white");
                     avgChartArea.append("text")
@@ -899,7 +928,7 @@
                         .text(`Date: ${dates[d].toLocaleDateString(undefined, {month:'short', day:'numeric'})}, Avg Births: ${Math.round(averageBirths[d])}`)
                 });
 
-                circles.on("mouseout", function(event, d) {
+                points.on("mouseout", function(event, d) {
                     d3.select(this).style("opacity", 0);
                     d3.select("#tooltip").remove();
                     d3.select("#rect").remove();
@@ -911,22 +940,195 @@
                 holidayCheck.on("click", function(){
                     let checkbox = d3.select(this);
                     if (checkbox.property("checked")){
-                        
-                        holidays.forEach(holiday =>{
-                            // drawLineChart(1994, {year: 1994, month: holiday[0], day: holiday[1]});
-                            console.log(holiday);
-                            avgChartArea.append("circle")
-                            .attr("class", "holiday-circle")
-                            .attr("cx", avgxScale(new Date(1994, holiday[0], holiday[1])))
-                            .attr("cy", avgyScale(500))
-                            .attr("r", 5)
-                            .style("fill", "red")
-                            .style("stroke", "red");
-                        })
-                        
+
+                        holidays.forEach(holiday => {
+                            Object.keys(avgBirths).forEach(d => {
+                                const date = new Date(d);
+                                if (date.getMonth() + 1 === holiday[0] && date.getDate() === holiday[1]) {
+                                    console.log(d);
+                                    console.log(avgBirths[d]);
+                                    avgChartArea.append("circle")
+                                        .attr("class", "holiday-circle")
+                                        .attr("cx", avgxScale(date))
+                                        .attr("cy", avgyScale(avgBirths[d] - avg_avg))
+                                        .attr("r", 5)
+                                        .style("fill", "#d62f2f")
+                                        .style("stroke", "#d62f2f")
+                                        .on("mouseover", function(event) {
+                                            console.log(d);
+                                            d3.select(this)
+                                                .style("opacity", 1);
+                                            avgChartArea.append("rect")
+                                                .attr("x", -13)
+                                                .attr("y", 0)
+                                                .attr("width", 220)
+                                                .attr("height", 17)
+                                                .attr("id","rect")
+                                                .style("fill","white");
+                                            avgChartArea.append("text")
+                                                .attr("id", "tooltip")
+                                                .attr("x", 100)
+                                                .attr("y", 10)
+                                                .attr("text-anchor", "middle")
+                                                .text(`Date: ${date.toLocaleDateString(undefined, {month:'short', day:'numeric'})}, Avg Births: ${Math.round(avgBirths[d])}`)
+                                        })
+                                        .on("mouseout", function(event, d) {
+                                            d3.select("#tooltip").remove();
+                                            d3.select("#rect").remove();
+                                        });
+                                }
+                            });
+                        });
+
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 330)
+                            .attr("y", 150)
+                            .text("Memorial Day")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 365)
+                            .attr("y", 120)
+                            .attr("width", 2)
+                            .attr("height", 8)
+                            .attr("fill", "#d62f2f")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 365)
+                            .attr("y", 128)
+                            .attr("width", 30)
+                            .attr("height", 2)
+                            .attr("fill", "#d62f2f")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 393)
+                            .attr("y", 120)
+                            .attr("width", 2)
+                            .attr("height", 8)
+                            .attr("fill", "#d62f2f")
+
+                        //
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 600)
+                            .attr("y", 120)
+                            .text("Labor Day")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 620)
+                            .attr("y", 90)
+                            .attr("width", 2)
+                            .attr("height", 8)
+                            .attr("fill", "#d62f2f")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 620)
+                            .attr("y", 98)
+                            .attr("width", 30)
+                            .attr("height", 2)
+                            .attr("fill", "#d62f2f")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x",648)
+                            .attr("y", 90)
+                            .attr("width", 2)
+                            .attr("height", 8)
+                            .attr("fill", "#d62f2f")
+
+                        //
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 800)
+                            .attr("y", 195)
+                            .text("Thanksgiving")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 830)
+                            .attr("y", 170)
+                            .attr("width", 2)
+                            .attr("height", 8)
+                            .attr("fill", "#d62f2f")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 830)
+                            .attr("y", 178)
+                            .attr("width", 30)
+                            .attr("height", 2)
+                            .attr("fill", "#d62f2f")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x",858)
+                            .attr("y", 170)
+                            .attr("width", 2)
+                            .attr("height", 8)
+                            .attr("fill", "#d62f2f")
+                        //
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 10)
+                            .attr("y", 288)
+                            .text("New Year's Day")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 50)
+                            .attr("y", 30)
+                            .text("Valentine's Day")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 145)
+                            .attr("y", 60)
+                            .text("St. Patrick's Day")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 262)
+                            .attr("y", 60)
+                            .text("Cinco De Mayo")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 440)
+                            .attr("y", 245)
+                            .text("July Fourth")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 750)
+                            .attr("y", 165)
+                            .text("Halloween")
+                        avgChartArea.append("rect")
+                            .attr("class", "holiday-rect")
+                            .attr("x", 830)
+                            .attr("y", 112)
+                            .attr("width", 102)
+                            .attr("height", 15)
+                            .attr("fill", "white")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 830)
+                            .attr("y", 125)
+                            .text("New Year's Eve")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 850)
+                            .attr("y", 365)
+                            .text("Christmas")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 660)
+                            .attr("y", 65)
+                            .text("9/11")
+                        avgChartArea.append("text")
+                            .attr("class", "holiday-text")
+                            .attr("x", 120)
+                            .attr("y", 135)
+                            .text("Leap Day")
+
+
+
                     }
                     else {
                         console.log("unchecked")
+                        document.querySelectorAll('.holiday-text, .holiday-circle, .holiday-rect').forEach(element => {
+                            element.remove();
+                        });
                     }
                 })
             }
