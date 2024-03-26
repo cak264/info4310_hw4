@@ -177,6 +177,13 @@
                 margin-left: 5px;
             }
 
+            #disclaimer {
+                position: absolute;
+                left: 50px;
+                top: 10px;
+                background-color: white;
+            }
+
         </style>
     </head>
     <body>
@@ -193,6 +200,7 @@
                 <input type="text" id="date-input" minlength="1" maxlength="2" size="4"></input>
                 <button id="submit">Update</button>
                 <button id="animate">View Change Across the Month</button>
+                <text id="disclaimer">*Excluding Major Holidays</text>
             </div>
 
             <h1 id="lc_h1">Birth Trends Over A Year</h1>
@@ -334,7 +342,7 @@
                 let histYScale = d3.scaleLinear().domain([Math.min(...Object.values(thirteenthsDict))-1000, Math.max(...Object.values(thirteenthsDict))+1000]).range([chartHeight, 0]);
                 let propHistYScale = d3.scaleLinear().domain([0.92, 1.045]).range([chartHeight, 0]);
 
-                function createAxes(yScale, graph, title){
+                function createAxes(yScale, graph){
                     let leftAxis = d3.axisLeft(yScale)
                                      .ticks(7);
                     graph.append('g')
@@ -354,34 +362,19 @@
                     graph.append('g')
                         .attr('transform',`translate(${margins.left},${chartHeight+margins.top+10})`)
                         .call(bottomAxis);
-
-                    // axis labels and titles
-                    // graph.append('text')
-                    //     .text(title)
-                    //     .attr("class", "title")
-                    //     .attr('x', 320)
-                    //     .attr('y', 10)
-                    //     .style('font-size', 20)
-                    //     .style('font-weight', 'bold')
-                    //     .style("text-anchor", "middle")
-                    //     .style("alignment-baseline", "central");
                 };
 
-                createAxes(histYScale, histogram, "Average Birth Counts on the 13th, 1994-2014");
-                createAxes(propHistYScale, propHistogram, "Ratio of Births on the 13th to Births on All Other Dates");
+                createAxes(histYScale, histogram);
+                createAxes(propHistYScale, propHistogram);
 
                 updateDate(13);
                 histArea.raise();
                 propHistArea.raise();
                 histogram.attr("visibility", "hidden");
 
-
-
                 // panel
 
-
                 let countPanel = d3.select("#day_of_week_container").append("g");
-                // console.log(countPanel);
                 countPanel.style("border", "1px solid black")
                           .attr("class", "count-panel")
                           .style("position", "absolute")
@@ -399,8 +392,7 @@
                           .style("font-size", 25)
                           .style("font-weight", "bold");
                 countPanel.append("p")
-                          .text("When comparing the average count of births on the 13th of any month of the span of 1994 - 2014, we can see that there are not the fewest number of births on Friday the 13th. In fact, this histogram appears to unveil a pattern of greater numbers of births on weekdays versus weekends. For almost every date, Tuesdays appear to be the most popular day to give birth, and Sundays are the least popular. ");
-
+                          .html("When comparing the average count of births on the 13th of any month of the span of 1994 - 2014, we can see that <strong>there are not the fewest number of births on Friday the 13th</strong>. In fact, this histogram appears to unveil a pattern of greater numbers of births on weekdays versus weekends. As the graph animates from the 1st to the 31st, one can notice that births appear to <strong>peak on Tuesdays and Wednesdays, and dip to their lowest values on Saturdays and Sundays</strong>. ");
 
                 let propPanel = d3.select("#day_of_week_container").append("g");
                 propPanel.style("border", "1px solid black")
@@ -408,7 +400,7 @@
                           .style("position", "absolute")
                           .style("bottom", "65px")
                           .style("left", "650px")
-                          .style("width", "500px")
+                          .style("width", "600px")
                           .style("height", "520px")
                           .style("visibility", "visible");
 
@@ -421,12 +413,12 @@
                           .style("font-weight", "bold");
 
                 propPanel.append("p")
-                          .text("This graphs compares the average number of births on any given day of each month to the average number of births on all other dates for each month over the span of 1994 - 2014.  The ratio metric along the y axis represents the comparison of average births on the specified date, to average births on any other date. Given this, a ratio of 1.0 occurs when these average births counts are equal to each other.");
+                          .html("This graphs compares the average number of births on any given day of each month to the average number of births on all other dates for each month over the span of 1994 - 2014.  <strong>The ratio metric along the y axis represents the comparison of average births on the specified date, to average births on any other date</strong>. Given this, a ratio of 1.0 occurs when these average births counts are equal to each other, and a <strong>ratio less than 1.0 occurs when the average birth counts on the selected date are less than the average birth counts regardless of date </strong>for the given weekday.");
                 propPanel.append("h3")
                          .text("Dates of Note")
                          .attr("id", "prop-subtitle");
                 propPanel.append("p")
-                         .text("Some dates that appear to have a more extreme deviation on a certain weekday from the average of the rest of the dates of the month are the Friday the 13th, Monday the 1st, Monday the 5th, Thursday the 22nd, and Monday the 31st. When looking at the 13th, we can see the ratio of births on the 13th to births not on the 13th for Friday is much lower than the other days of the week. This unveils that if a baby is born on a Friday, the parents prefer the date of that Friday to not be the 13th, showing that people are supersticious about Friday the 13th. We can see similar effects with those other dates of note, like Monday the 1st and 31st having a ratio of about 0.97 and 0.93 respectively when the rest of the days of the week have a ratio around of above 1.0. This shows that parents are averse to having their child on a Monday when it is the first or the last day of the month.");
+                         .html("Some dates that appear to have a more extreme deviation on a certain weekday from the average of the rest of the dates of the month are the Friday the 13th, Monday the 1st, Monday the 5th, Thursday the 22nd, and Monday the 31st. When looking at the 13th, we can see <strong>the ratio of births on the 13th to births not on the 13th is below 1.0 for every day of the week, and the Friday ratio is even lower than the other days of the week</strong>. This unveils that people are supersticious about having their child born on the 13th, even more so if it is Friday the 13th. We can see similar effects with those other dates of note, like Monday the 1st and 31st having a ratio of about 0.97 and 0.93 respectively when the rest of the days of the week have a ratio around of above 1.0. This shows that parents are averse to having their child on a Monday when it is the first or the last day of the month.");
 
 
                 d3.select("#countsButton").on("click", function(){
