@@ -470,9 +470,9 @@
                         .transition().duration(200)
                         .attr("x", d=> histXScale(d[0]))
                         .attr("y", d=> histYScale(d[1]))
-                        .attr("width", histXScale.bandwidth())
+                        .attr("width", histXScale.bandwidth()-5)
                         .attr("height", d=> chartHeight - histYScale(d[1]))
-                        .attr("fill", "#2c659e");
+                        .attr("fill", "#bf0404");
 
                     propHistArea.selectAll("rect.proportion").data(Object.entries(propDict))
                         .join("rect")
@@ -480,10 +480,10 @@
                         .transition().duration(200)
                         .attr("x", d=> histXScale(d[0]))
                         .attr("y", d=> propHistYScale(d[1]))
-                        .attr("width", histXScale.bandwidth())
+                        .attr("width", histXScale.bandwidth()-5)
                         .attr("height", d=> chartHeight - propHistYScale(d[1]))
                         .attr("fill", function(d){
-                            if (d[1] == Math.min(...Object.values(propDict))){return "#d62f2f"}
+                            if (d[1] == Math.min(...Object.values(propDict))){return "#f54242"}
                             else{return "#4a4444"}
                         });
 
@@ -509,7 +509,7 @@
                     histArea.selectAll("rect.selectedDate").on("mouseover", function(event, d){
                         d3.select(this)
                         .attr("stroke", "black")
-                        .attr("stroke-width", 3);
+                        .attr("stroke-width", 4);
                         countPanel.append("p")
                             .attr("x", 10)
                             .attr("y", 400)
@@ -529,8 +529,8 @@
 
                     propHistArea.selectAll("rect.proportion").on("mouseover", function(event, d){
                         d3.select(this)
-                        .attr("stroke", "#c4c2c2")
-                        .attr("stroke-width", 3);
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 4);
                         propPanel.append("p")
                             .attr("x", 0)
                             .attr("y", 0)
